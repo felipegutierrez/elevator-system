@@ -6,7 +6,7 @@ jdk:
   - openjdk8
 branches:
   only:
-    - master
+    - main
 script:
   - sbt coverage test
 #  - sbt ++$TRAVIS_SCALA_VERSION compile
