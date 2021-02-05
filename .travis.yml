@@ -1,0 +1,17 @@
+dist: xenial
+language: scala
+sudo: true
+scala: 2.13.4
+jdk:
+  - openjdk8
+branches:
+  only:
+    - master
+script:
+  - sbt coverage test
+#  - sbt ++$TRAVIS_SCALA_VERSION compile
+#  - sbt ++$TRAVIS_SCALA_VERSION test
+#  - sbt ++$TRAVIS_SCALA_VERSION package
+
+after_success:
+  - sbt coverageReport coveralls
