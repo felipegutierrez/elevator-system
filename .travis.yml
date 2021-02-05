@@ -1,7 +1,7 @@
 dist: xenial
 language: scala
 sudo: true
-scala: 2.13.4
+scala: 2.12.7
 jdk:
   - openjdk8
 branches:
