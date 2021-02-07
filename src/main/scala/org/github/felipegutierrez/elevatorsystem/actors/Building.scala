@@ -29,17 +29,14 @@ case class Building(numberOfFloors: Int = 10,
   val elevators = for (id <- 1 to numberOfElevators) yield context.actorOf(Props[Elevator], s"elevator_$id")
 
   override def receive: Receive = {
-    case request@PickUpRequest(elevatorPanelActor) =>
-      println(s"[Building] building received a pick_up_request and will find an elevator to send.")
+    case request@PickUpRequest(pickUpFloor, direction) =>
+      println(s"[Building] building received a pick_up_request from floor[$pickUpFloor] to go [$direction] and will find an elevator to send.")
       println(s"[Building] add the pickup flor on the request pickup list.")
       println(s"[Building] use the control system to find an elevator")
-      elevatorControlSystem.findElevator().map(elevatorId => MoveElevator(elevatorId)).pipeTo(self)
-
-      println(s"[Building] In the mean time I will send a success to this command")
-      request.elevatorPanelActor ! PickUpSuccess()
+      elevatorControlSystem.findElevator(pickUpFloor, direction).map(id => MoveElevator(id)).pipeTo(self)
+      sender() ! PickUpSuccess()
     case MoveElevator(elevatorId) =>
-      println(s"[Building] I will move the elevator: $elevatorId")
-      // val elevatorActorRef: ActorRef = elevators(elevatorId)
+      println(s"[Building] received MoveElevator($elevatorId) I will move it")
       val elevatorActor: ActorSelection = context.actorSelection(s"/user/buildingActor/elevator_$elevatorId")
       elevatorActor ! MoveRequest()
       // TODO: where do I remove the elevator ID from the list of requested moves?

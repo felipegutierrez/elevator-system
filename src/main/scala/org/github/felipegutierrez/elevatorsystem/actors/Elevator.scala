@@ -6,9 +6,8 @@ import org.github.felipegutierrez.elevatorsystem.actors.protocol.Protocol._
 class Elevator extends Actor with ActorLogging {
   override def receive: Receive = {
     case request@MoveRequest() =>
-      println(s"[Elevator] move request received from my parent actor building: ${sender()}")
-      println(s"[Elevator] Ok, I will move")
-      println(s"[Elevator] ")
+      println(s"[Elevator ${self}] Ok sender [${sender()}], I will move")
+      println(s"[Elevator ${self}] ")
       sender() ! MoveRequestSuccess()
   }
 }

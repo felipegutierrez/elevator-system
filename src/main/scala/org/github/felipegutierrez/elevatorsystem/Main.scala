@@ -15,9 +15,11 @@ object Main {
     val elevatorPanelActor = system.actorOf(Props[ElevatorPanel], "elevatorPanelActor")
     val buildingActor = system.actorOf(Building.props(numberOfFloors, numberOfElevators), "buildingActor")
 
-    elevatorPanelActor ! PickUp(buildingActor)
+    elevatorPanelActor ! PickUp(4, +1, buildingActor)
+    // elevatorPanelActor ! PickUp(1, +1, buildingActor)
+    // elevatorPanelActor ! PickUp(10, -1, buildingActor)
+    // elevatorPanelActor ! PickUp(7, -1, buildingActor)
 
-    Thread.sleep(5000)
-    system.terminate()
+    Thread.sleep(10000)
   }
 }
