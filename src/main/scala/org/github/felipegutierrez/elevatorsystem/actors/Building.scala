@@ -46,5 +46,3 @@ case class Building(numberOfFloors: Int = 10,
       println(s"[Building] MoveRequestSuccess received")
   }
 }
-
-
