@@ -1,13 +1,14 @@
 package org.github.felipegutierrez.elevatorsystem.actors
 
-import org.github.felipegutierrez.elevatorsystem.states.ElevatorState
+import akka.actor.{Actor, ActorLogging}
+import org.github.felipegutierrez.elevatorsystem.actors.protocol.Protocol._
 
-/**
- * The Elevator of the Building.
- * This is an actor that receives/sends messages from/to the Building
- *
- * @param state the state of this Elevator
- */
-case class Elevator(state: ElevatorState) {
-
+class Elevator extends Actor with ActorLogging {
+  override def receive: Receive = {
+    case request@MoveRequest() =>
+      println(s"[Elevator] move request received from my parent actor building: ${sender()}")
+      println(s"[Elevator] Ok, I will move")
+      println(s"[Elevator] ")
+      sender() ! MoveRequestSuccess()
+  }
 }
