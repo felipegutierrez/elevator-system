@@ -9,7 +9,7 @@ class ElevatorPanel extends Actor with ActorLogging {
     case PickUp(pickUpFloor, direction, buildingActor) =>
       println(s"[ElevatorPanel] panel received a pick_up from floor [$pickUpFloor] to go [$direction] and will send the pick_up to the building")
       buildingActor ! PickUpRequest(pickUpFloor, direction)
-    case PickUpSuccess() =>
+    case PickUpRequestSuccess() =>
       println(s"[ElevatorPanel] pick_up successful")
   }
 }

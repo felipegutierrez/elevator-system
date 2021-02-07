@@ -6,8 +6,8 @@ object Protocol {
 
   trait ElevatorPanelProtocol
   case class PickUp(pickUpFloor: Int, direction: Int, buildingActor: ActorRef) extends ElevatorPanelProtocol
-  case class PickUpSuccess() extends ElevatorPanelProtocol
-  case class PickUpFailure() extends ElevatorPanelProtocol
+  case class PickUpRequestSuccess() extends ElevatorPanelProtocol
+  case class PickUpRequestFailure() extends ElevatorPanelProtocol
   // case class PickUpResponse() extends ElevatorProtocol
   // case class PickUpResponseSuccess() extends ElevatorProtocol
 
