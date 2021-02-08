@@ -8,17 +8,21 @@ object Protocol {
   case class PickUp(pickUpFloor: Int, direction: Int, buildingActor: ActorRef) extends ElevatorPanelProtocol
   case class PickUpRequestSuccess() extends ElevatorPanelProtocol
   case class PickUpRequestFailure() extends ElevatorPanelProtocol
-  // case class PickUpResponse() extends ElevatorProtocol
-  // case class PickUpResponseSuccess() extends ElevatorProtocol
 
   trait BuildingProtocol
   case class Initialize() extends BuildingProtocol
   case class PickUpRequest(pickUpFloor: Int, direction: Int) extends BuildingProtocol
   case class MoveElevator(elevatorId: Int) extends BuildingProtocol
+  case class MoveElevatorSuccess(elevatorId: Int, floor: Int) extends BuildingProtocol
   case class MoveElevatorFailure(reason: Throwable) extends BuildingProtocol
-  case class MoveRequestSuccess() extends BuildingProtocol
+  case class MoveRequestSuccess(elevatorId: Int, floor: Int, direction: Int) extends BuildingProtocol
+  case class ElevatorState(elevatorId: Int, currentFloor: Int, targetFloor: Int, direction: Int) extends BuildingProtocol
+  case class DropOffRequest(elevatorId: Int, dropOffFloor: Int) extends BuildingProtocol
 
   trait ElevatorProtocol
-  case class MoveRequest() extends ElevatorProtocol
+  case class MoveRequest(elevatorId: Int, floor: Int) extends ElevatorProtocol
+  case class RequestElevatorState(elevatorId: Int) extends ElevatorProtocol
+  case class MoveDone(elevatorId: Int, targetFloor: Int) extends ElevatorProtocol
+  case class ElevatorInfo(msg: String) extends ElevatorProtocol
 
 }

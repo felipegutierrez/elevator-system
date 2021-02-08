@@ -2,6 +2,7 @@ name := "elevator-system"
 
 version := "0.1"
 
+// scalaVersion := "2.13.4"
 scalaVersion := "2.12.7"
 
 val scalaBinVersion = "2.12"
@@ -14,9 +15,11 @@ libraryDependencies ++= Seq(
   "com.typesafe.akka" %% "akka-actor" % akkaVersion,
   "com.typesafe.akka" %% "akka-testkit" % akkaVersion,
   "com.typesafe.akka" %% "akka-slf4j" % akkaVersion,
-  "ch.qos.logback" % "logback-classic" % logbackVersion,
 
   // Scala test
   "org.scalatest" %% "scalatest" % scalaTestVersion,
+
+  // Log
+  "ch.qos.logback" % "logback-classic" % logbackVersion,
 )
 
