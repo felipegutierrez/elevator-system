@@ -117,6 +117,9 @@ case class BuildingCoordinator(actorName: String,
    * @return
    */
   def createElevators(numberOfElevators: Int): IndexedSeq[ActorRef] = {
-    for (id <- 1 to numberOfElevators) yield context.actorOf(Elevator.props(id, s"elevator_$id"), s"elevator_$id")
+    for (id <- 1 to numberOfElevators) yield {
+      val elevator = context.actorOf(Elevator.props(id, s"elevator_$id"), s"elevator_$id")
+      context.watch(elevator)
+    }
   }
 }
