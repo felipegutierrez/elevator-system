@@ -1,7 +1,7 @@
 package org.github.felipegutierrez.elevatorsystem.services
 
 trait ElevatorControlSystem {
-  def findElevator(pickUpFloor: Int, direction: Int): Int
+  def nextElevatorUsingRoundRobin(): Int
 
   def findNextStop(stopsRequested: Set[Int]): Int
 

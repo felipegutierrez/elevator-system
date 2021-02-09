@@ -19,9 +19,14 @@ object Main {
     println(s"\nThis is a control system for elevators")
 
     // testing system with 1 elevator and the First-Come-First-Serve controller
-    run(10, 1, new ElevatorControlSystemFCFS())
+    val numberOfFloors = 10
+    val numberOfElevators = 1
+    run(numberOfFloors, numberOfElevators, new ElevatorControlSystemFCFS(1))
+
     // testing system with 2 elevators and the First-Come-First-Serve controller
-    // run(10, 2, new ElevatorControlSystemFCFS())
+    //    val numberOfFloors = 10
+    //    val numberOfElevators = 2
+    //    run(numberOfFloors, numberOfElevators, new ElevatorControlSystemFCFS(numberOfElevators))
   }
 
   def run(numberOfFloors: Int, numberOfElevators: Int, controller: ElevatorControlSystem): Unit = {
