@@ -1,8 +1,8 @@
 package org.github.felipegutierrez.elevatorsystem.actors
 
 import akka.actor.ActorSystem
-import akka.testkit.{ImplicitSender, TestKit}
-import org.github.felipegutierrez.elevatorsystem.actors.exceptions.BuildingException
+import akka.testkit.{EventFilter, ImplicitSender, TestKit}
+import org.github.felipegutierrez.elevatorsystem.actors.exceptions.BuildingCoordinatorException
 import org.github.felipegutierrez.elevatorsystem.actors.protocol.Protocol._
 import org.scalatest.BeforeAndAfterAll
 import org.scalatest.matchers.should.Matchers
@@ -47,13 +47,14 @@ class BuildingCoordinatorSpec extends TestKit(ActorSystem("BuildingCoordinatorSp
       try {
         val buildingActor = system.actorOf(BuildingCoordinator.props(actorName, numberOfFloors, numberOfElevators), actorName)
       } catch {
-        case BuildingException(msg) =>
+        case BuildingCoordinatorException(msg) =>
           println(s"I got exception $msg")
           assert(true)
         case _: Throwable => fail("we should get an exception here")
       }
     }
   }
+
   "the Building must not be a house, so it" should {
     "have 2 or more floors" in {
       val numberOfFloors: Int = 1
@@ -62,10 +63,25 @@ class BuildingCoordinatorSpec extends TestKit(ActorSystem("BuildingCoordinatorSp
         val actorName = "buildingActorSpec3"
         val buildingActor = system.actorOf(BuildingCoordinator.props(actorName, numberOfFloors, numberOfElevators), actorName)
       } catch {
-        case BuildingException(msg) =>
+        case BuildingCoordinatorException(msg) =>
           println(s"I got exception $msg")
           assert(true)
         case _: Throwable => fail("we should get an exception here")
+      }
+    }
+  }
+
+  "When the Building actor receives a wrong pick up message" should {
+    "not be allowed it" in {
+      EventFilter[BuildingCoordinatorException](occurrences = 1) intercept {
+        val numberOfFloors: Int = 10
+        val numberOfElevators: Int = 3
+        val actorName = "buildingActorSpec4"
+
+        val buildingActor = system.actorOf(BuildingCoordinator.props(actorName, numberOfFloors, numberOfElevators), actorName)
+        val floor = -1
+        val direction = +1
+        buildingActor ! PickUpRequest(floor, direction)
       }
     }
   }

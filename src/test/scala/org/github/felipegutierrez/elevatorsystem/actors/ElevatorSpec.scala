@@ -1,6 +1,6 @@
 package org.github.felipegutierrez.elevatorsystem.actors
 
-import akka.actor.{ActorSystem, Props}
+import akka.actor.ActorSystem
 import akka.testkit.{ImplicitSender, TestKit}
 import org.github.felipegutierrez.elevatorsystem.actors.protocol.Protocol._
 import org.scalatest.BeforeAndAfterAll
@@ -18,7 +18,8 @@ class ElevatorSpec extends TestKit(ActorSystem("ElevatorSpec"))
   }
 
   "an Elevator actor" should {
-    val elevatorActor = system.actorOf(Props[Elevator], s"elevator_1")
+    val id = 1
+    val elevatorActor = system.actorOf(Elevator.props(id, s"elevator_$id"), s"elevator_$id")
     "retrieve its state when it is stop" in {
       elevatorActor ! RequestElevatorState(1)
       expectMsg(ElevatorState(1, 0, 0, 0))

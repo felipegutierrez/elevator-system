@@ -3,7 +3,7 @@ package org.github.felipegutierrez.elevatorsystem.actors
 import akka.actor.{Actor, ActorLogging, ActorRef, ActorSelection, Props}
 import akka.pattern.ask
 import akka.util.Timeout
-import org.github.felipegutierrez.elevatorsystem.actors.exceptions.BuildingException
+import org.github.felipegutierrez.elevatorsystem.actors.exceptions.BuildingCoordinatorException
 import org.github.felipegutierrez.elevatorsystem.actors.protocol.Protocol.{DropOffRequest, _}
 import org.github.felipegutierrez.elevatorsystem.services.{ElevatorControlSystem, ElevatorControlSystemFCFS}
 
@@ -15,8 +15,8 @@ object BuildingCoordinator {
             numberOfFloors: Int = 10,
             numberOfElevators: Int = 1,
             elevatorControlSystem: ElevatorControlSystem = new ElevatorControlSystemFCFS()) = {
-    if (numberOfElevators < 0 || numberOfElevators > 16) throw BuildingException("Number of elevators must be between 1 and 16")
-    if (numberOfFloors < 2) throw BuildingException("This is not a building. It is a house")
+    if (numberOfElevators < 0 || numberOfElevators > 16) throw new BuildingCoordinatorException("Number of elevators must be between 1 and 16")
+    if (numberOfFloors < 2) throw new BuildingCoordinatorException("This is not a building. It is a house")
     Props(new BuildingCoordinator(actorName, numberOfFloors, numberOfElevators, elevatorControlSystem))
   }
 }
@@ -52,6 +52,13 @@ case class BuildingCoordinator(actorName: String,
 
     case request@PickUpRequest(pickUpFloor, direction) =>
       println(s"[BuildingCoordinator] received a $request from floor[$pickUpFloor] to go [$direction] and will find an elevator to send.")
+
+      if (pickUpFloor > numberOfFloors || pickUpFloor < 0) throw new BuildingCoordinatorException(s"I cannot pick up you because the floor $pickUpFloor does not exist in this building")
+      if (direction != +1 && direction != -1) throw new BuildingCoordinatorException("the directions that this elevators supports are only: up [+1] and down [-1]")
+      if (pickUpFloor == 1 && direction == -1) throw new BuildingCoordinatorException("you cannot go down because you are on the first floor.")
+      if (pickUpFloor == numberOfFloors && direction == +1) throw new BuildingCoordinatorException("you cannot go up because you are on the last floor.")
+
+
       // add the pickup flor on the request stop list.
       stopsRequests += pickUpFloor
       pickUpRequests += pickUpFloor
