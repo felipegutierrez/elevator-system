@@ -49,14 +49,16 @@ case class BuildingCoordinator(actorName: String,
   var pickUpRequests = Set[Int]()
 
   override def receive: Receive = {
+
     case request@PickUpRequest(pickUpFloor, direction) =>
-      println(s"[BuildingCoordinator] received a pick_up_request from floor[$pickUpFloor] to go [$direction] and will find an elevator to send.")
+      println(s"[BuildingCoordinator] received a $request from floor[$pickUpFloor] to go [$direction] and will find an elevator to send.")
       // add the pickup flor on the request stop list.
       stopsRequests += pickUpFloor
       pickUpRequests += pickUpFloor
       val elevatorId = elevatorControlSystem.findElevator(pickUpFloor, direction)
       self ! MoveElevator(elevatorId)
       sender() ! PickUpRequestSuccess()
+
     case msg@MoveElevator(elevatorId) =>
       println(s"[BuildingCoordinator] received $msg")
       val elevatorActor: ActorSelection = context.actorSelection(s"/user/$actorName/elevator_$elevatorId")
@@ -67,8 +69,7 @@ case class BuildingCoordinator(actorName: String,
           val nextStop = elevatorControlSystem.findNextStop(stopsRequests)
           elevatorActor ! MoveRequest(elevatorId, nextStop)
         }
-    case MoveElevatorFailure(exception) =>
-      println(s"[BuildingCoordinator] I could not move the elevator due to: $exception")
+
     case MoveRequestSuccess(elevatorId, floor, direction) =>
       println(s"[BuildingCoordinator] Elevator $elevatorId arrived at floor [$floor]")
       stopsRequests -= floor
@@ -80,11 +81,15 @@ case class BuildingCoordinator(actorName: String,
         println(s"[BuildingCoordinator] A passenger request a $dropOffMsg")
         self ! dropOffMsg
       }
+
     case msg@DropOffRequest(elevatorId, dropOffFloor) =>
       println(s"[BuildingCoordinator] received DropOffRequest to floor [$dropOffFloor]")
       stopsRequests += dropOffFloor
       // passenger already in the elevator, just need to tell the elevator to move
       self ! MoveElevator(elevatorId)
+
+    case MoveElevatorFailure(exception) =>
+      println(s"[BuildingCoordinator] I could not move the elevator due to: $exception")
   }
 
   /**
@@ -112,6 +117,6 @@ case class BuildingCoordinator(actorName: String,
    * @return
    */
   def createElevators(numberOfElevators: Int): IndexedSeq[ActorRef] = {
-    for (id <- 1 to numberOfElevators) yield context.actorOf(Props[Elevator], s"elevator_$id")
+    for (id <- 1 to numberOfElevators) yield context.actorOf(Elevator.props(id, s"elevator_$id"), s"elevator_$id")
   }
 }

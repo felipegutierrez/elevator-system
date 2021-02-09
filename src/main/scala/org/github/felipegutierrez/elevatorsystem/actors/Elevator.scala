@@ -1,11 +1,15 @@
 package org.github.felipegutierrez.elevatorsystem.actors
 
-import akka.actor.{Actor, ActorLogging, Stash}
+import akka.actor.{Actor, ActorLogging, Props, Stash}
 import akka.pattern.ask
 import akka.util.Timeout
 import org.github.felipegutierrez.elevatorsystem.actors.protocol.Protocol._
 
 import scala.concurrent.duration._
+
+object Elevator {
+  def props(actorId: Int, actorName: String) = Props(new Elevator(actorId, actorName))
+}
 
 /**
  * The [[org.github.felipegutierrez.elevatorsystem.actors.Elevator]] actor that is created by the
@@ -18,7 +22,7 @@ import scala.concurrent.duration._
  * The akka.actor.Stash is used to achieve this feature.
  *
  */
-class Elevator extends Actor with ActorLogging with Stash {
+case class Elevator(actorId: Int, actorName: String) extends Actor with ActorLogging with Stash {
   var currentFloor = 0
   var targetFloor = 0
   var direction = 0
