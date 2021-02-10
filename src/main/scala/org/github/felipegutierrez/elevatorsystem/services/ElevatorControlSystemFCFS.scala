@@ -1,21 +1,9 @@
 package org.github.felipegutierrez.elevatorsystem.services
 
-class ElevatorControlSystemFCFS(val numberOfElevators: Int) extends ElevatorControlSystem {
+class ElevatorControlSystemFCFS(numberOfFloors: Int, numberOfElevators: Int)
+  extends ElevatorControlSystem(numberOfFloors, numberOfElevators) {
 
-  var lastElevator = 0
-
-  def nextElevatorUsingRoundRobin(): Int = {
-    // println(s"[ElevatorControlSystemFCFS] finding the closest elevator ...")
-    lastElevator += 1
-    if (lastElevator > numberOfElevators) lastElevator = 1
-    lastElevator
-  }
-
-  override def findNextStop(stopsRequested: Set[Int], currentFloor: Int, direction: Int): Int = {
-    findNextStop(stopsRequested)
-  }
-
-  override def findNextStop(stopsRequested: Set[Int]): Int = {
+  override def findNextStop(stopsRequested: Set[Int], currentFloor: Int = 0, direction: Int = 1): Int = {
     // println(s"[ElevatorControlSystemFCFS] next stop from list: ${stopsRequested.map(x => s"$x , ").mkString}")
     stopsRequested.head
   }

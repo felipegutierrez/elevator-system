@@ -15,7 +15,7 @@ object BuildingCoordinator {
   def props(actorName: String = "buildingCoordinatorActor",
             numberOfFloors: Int = 10,
             numberOfElevators: Int = 1,
-            elevatorControlSystem: ElevatorControlSystem = new ElevatorControlSystemFCFS(1)) = {
+            elevatorControlSystem: ElevatorControlSystem = new ElevatorControlSystemFCFS(10, 1)) = {
     if (numberOfElevators < 0 || numberOfElevators > 16) throw new BuildingCoordinatorException("Number of elevators must be between 1 and 16")
     if (numberOfFloors < 2) throw new BuildingCoordinatorException("This is not a building. It is a house")
     Props(new BuildingCoordinator(actorName, numberOfFloors, numberOfElevators, elevatorControlSystem))
@@ -74,7 +74,7 @@ case class BuildingCoordinator(actorName: String,
       stateFuture
         .mapTo[BuildingCoordinatorProtocol.ElevatorState]
         .map { state: BuildingCoordinatorProtocol.ElevatorState =>
-          val nextStop = elevatorControlSystem.findNextStop(stopsRequests.get(elevatorId).get)
+          val nextStop = elevatorControlSystem.findNextStop(stopsRequests.get(elevatorId).get, state.currentFloor, state.direction)
           val requestFuture = elevatorActor ? ElevatorProtocol.MoveRequest(elevatorId, nextStop)
           requestFuture
             .mapTo[BuildingCoordinatorProtocol.MoveRequestSuccess]
