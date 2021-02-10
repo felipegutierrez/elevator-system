@@ -5,11 +5,11 @@ import akka.pattern.ask
 import akka.util.Timeout
 import org.github.felipegutierrez.elevatorsystem.actors.exceptions.BuildingCoordinatorException
 import org.github.felipegutierrez.elevatorsystem.actors.protocol.{BuildingCoordinatorProtocol, ElevatorPanelProtocol, ElevatorProtocol}
+import org.github.felipegutierrez.elevatorsystem.actors.util.BuildingUtil
 import org.github.felipegutierrez.elevatorsystem.services.{ElevatorControlSystem, ElevatorControlSystemFCFS}
 
 import scala.collection.mutable
 import scala.concurrent.duration._
-import scala.util.Random
 
 object BuildingCoordinator {
   def props(actorName: String = "buildingCoordinatorActor",
@@ -56,7 +56,7 @@ case class BuildingCoordinator(actorName: String,
 
       if (pickUpFloor > numberOfFloors || pickUpFloor < 0) throw new BuildingCoordinatorException(s"I cannot pick up you because the floor $pickUpFloor does not exist in this building")
       if (direction != +1 && direction != -1) throw new BuildingCoordinatorException("the directions that this elevators supports are only: up [+1] and down [-1]")
-      if (pickUpFloor == 1 && direction == -1) throw new BuildingCoordinatorException("you cannot go down because you are on the first floor.")
+      if (pickUpFloor == 0 && direction == -1) throw new BuildingCoordinatorException("you cannot go down because you are on the ground floor.")
       if (pickUpFloor == numberOfFloors && direction == +1) throw new BuildingCoordinatorException("you cannot go up because you are on the last floor.")
 
       val elevatorId = elevatorControlSystem.nextElevatorUsingRoundRobin()
@@ -88,7 +88,7 @@ case class BuildingCoordinator(actorName: String,
                   // If the floor was a PickUpRequest we should ask the following message DropOffRequest
                   if (existPickUpRequest(makeMoveSuccess.elevatorId, makeMoveSuccess.floor)) {
                     removePickUpRequest(makeMoveSuccess.elevatorId, makeMoveSuccess.floor)
-                    val dropOffFloor = generateRandomFloor(makeMoveSuccess.floor, makeMoveSuccess.direction)
+                    val dropOffFloor = BuildingUtil.generateRandomFloor(numberOfFloors, makeMoveSuccess.floor, makeMoveSuccess.direction)
                     val dropOffMsg = BuildingCoordinatorProtocol.DropOffRequest(makeMoveSuccess.elevatorId, dropOffFloor)
                     // println(s"[BuildingCoordinator] A passenger on [Elevator ${makeMoveSuccess.elevatorId}] request a $dropOffMsg")
                     self ! dropOffMsg
@@ -132,23 +132,6 @@ case class BuildingCoordinator(actorName: String,
 
   def existPickUpRequest(elevatorId: Int, stop: Int): Boolean = {
     pickUpRequests.getOrElse(elevatorId, Set[Int]()).contains(stop)
-  }
-
-  /**
-   * Generate a random floor to request the message
-   * [[org.github.felipegutierrez.elevatorsystem.actors.protocol.BuildingCoordinatorProtocol.DropOffRequest]].
-   *
-   * @param floor
-   * @param direction
-   * @return
-   */
-  def generateRandomFloor(floor: Int, direction: Int): Int = {
-    if (direction > 0) {
-      floor + Random.nextInt((numberOfFloors - floor) + 1)
-    } else {
-      if (floor == 1) 0
-      else Random.nextInt(floor - 1)
-    }
   }
 
   /**

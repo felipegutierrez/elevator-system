@@ -66,7 +66,7 @@ case class Elevator(actorId: Int, actorName: String) extends Actor with ActorLog
       else direction = 0
 
       // we already change the handler so every message receives after this line will be stashed because the Elevator is moving
-      val milliseconds = (if (currentFloor < targetFloor) targetFloor - currentFloor else currentFloor - targetFloor) * 100
+      val milliseconds = (if (currentFloor < targetFloor) targetFloor - currentFloor else currentFloor - targetFloor) * 10
       println(s"[Elevator $actorId] moving from floor $currentFloor to floor $targetFloor in $milliseconds milliseconds ...\n")
       Thread.sleep(milliseconds)
 

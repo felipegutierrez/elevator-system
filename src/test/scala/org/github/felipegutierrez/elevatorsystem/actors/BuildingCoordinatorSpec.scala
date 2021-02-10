@@ -130,4 +130,36 @@ class BuildingCoordinatorSpec extends TestKit(ActorSystem("BuildingCoordinatorSp
       }
     }
   }
+
+  "when a PickUpRequest comes from the ground floor to go DOWN (-1) it" should {
+    "NOT allow" in {
+      EventFilter[BuildingCoordinatorException](occurrences = 1) intercept {
+        val numberOfFloors: Int = 10
+        val numberOfElevators: Int = 1
+        val actorName = "buildingActorSpec5"
+
+        val buildingActor = system.actorOf(BuildingCoordinator.props(actorName, numberOfFloors, numberOfElevators), actorName)
+        val floor = 0
+        val direction = -1
+        buildingActor ! BuildingCoordinatorProtocol.PickUpRequest(floor, direction)
+        expectNoMessage()
+      }
+    }
+  }
+
+  "when a PickUpRequest comes from the last floor to go UP (+1) it" should {
+    "NOT allow" in {
+      EventFilter[BuildingCoordinatorException](occurrences = 1) intercept {
+        val numberOfFloors: Int = 10
+        val numberOfElevators: Int = 1
+        val actorName = "buildingActorSpec6"
+
+        val buildingActor = system.actorOf(BuildingCoordinator.props(actorName, numberOfFloors, numberOfElevators), actorName)
+        val floor = 10
+        val direction = 1
+        buildingActor ! BuildingCoordinatorProtocol.PickUpRequest(floor, direction)
+        expectNoMessage()
+      }
+    }
+  }
 }
