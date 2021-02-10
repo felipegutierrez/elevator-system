@@ -4,7 +4,7 @@ import akka.actor.{Actor, ActorLogging, ActorRef, ActorSelection, Props}
 import akka.pattern.ask
 import akka.util.Timeout
 import org.github.felipegutierrez.elevatorsystem.actors.exceptions.BuildingCoordinatorException
-import org.github.felipegutierrez.elevatorsystem.actors.protocol.Protocol.{DropOffRequest, _}
+import org.github.felipegutierrez.elevatorsystem.actors.protocol.{BuildingCoordinatorProtocol, ElevatorPanelProtocol, ElevatorProtocol}
 import org.github.felipegutierrez.elevatorsystem.services.{ElevatorControlSystem, ElevatorControlSystemFCFS}
 
 import scala.collection.mutable
@@ -20,28 +20,6 @@ object BuildingCoordinator {
     if (numberOfFloors < 2) throw new BuildingCoordinatorException("This is not a building. It is a house")
     Props(new BuildingCoordinator(actorName, numberOfFloors, numberOfElevators, elevatorControlSystem))
   }
-
-  //  def main(args: Array[String]): Unit = {
-  //    var stopsRequests = mutable.Map[Int, Set[Int]]()
-  //    stopsRequests += (1 -> Set[Int](10, 20))
-  //    stopsRequests.foreach {
-  //      case (k, v) => println(s"$k -> ${v.mkString}")
-  //    }
-  //    // add
-  //    var value: Set[Int] = stopsRequests.get(1).getOrElse(Set[Int]())
-  //    value += 30
-  //    stopsRequests.update(1, value)
-  //    stopsRequests.foreach {
-  //      case (k, v) => println(s"$k -> ${v.mkString}")
-  //    }
-  //    // remove
-  //    value = stopsRequests.get(1).getOrElse(Set[Int]())
-  //    value -= 20
-  //    stopsRequests.update(1, value)
-  //    stopsRequests.foreach {
-  //      case (k, v) => println(s"$k -> ${v.mkString}")
-  //    }
-  //  }
 }
 
 /**
@@ -70,11 +48,10 @@ case class BuildingCoordinator(actorName: String,
 
   var stopsRequests = mutable.Map[Int, Set[Int]]()
   var pickUpRequests = mutable.Map[Int, Set[Int]]()
-  // var pickUpRequests = Set[Int]()
 
   override def receive: Receive = {
 
-    case request@PickUpRequest(pickUpFloor, direction) =>
+    case request@BuildingCoordinatorProtocol.PickUpRequest(pickUpFloor, direction) =>
       println(s"[BuildingCoordinator] received a $request from floor[$pickUpFloor] to go [$direction] and will find an elevator to send.")
 
       if (pickUpFloor > numberOfFloors || pickUpFloor < 0) throw new BuildingCoordinatorException(s"I cannot pick up you because the floor $pickUpFloor does not exist in this building")
@@ -85,44 +62,48 @@ case class BuildingCoordinator(actorName: String,
       val elevatorId = elevatorControlSystem.nextElevatorUsingRoundRobin()
 
       addStopRequest(elevatorId, pickUpFloor)
-      addPickUpRequest(elevatorId, pickUpFloor) //pickUpRequests += pickUpFloor
+      addPickUpRequest(elevatorId, pickUpFloor)
 
-      self ! MoveElevator(elevatorId)
-      sender() ! PickUpRequestSuccess()
+      self ! BuildingCoordinatorProtocol.MoveElevator(elevatorId)
+      sender() ! ElevatorPanelProtocol.PickUpRequestSuccess()
 
-    case msg@MoveElevator(elevatorId) =>
+    case msg@BuildingCoordinatorProtocol.MoveElevator(elevatorId) =>
       println(s"[BuildingCoordinator] received $msg")
       val elevatorActor: ActorSelection = context.actorSelection(s"/user/$actorName/elevator_$elevatorId")
-      val stateFuture = elevatorActor ? RequestElevatorState(elevatorId)
+      val stateFuture = elevatorActor ? ElevatorProtocol.RequestElevatorState(elevatorId)
       stateFuture
-        .mapTo[ElevatorState]
-        .map { state: ElevatorState =>
+        .mapTo[BuildingCoordinatorProtocol.ElevatorState]
+        .map { state: BuildingCoordinatorProtocol.ElevatorState =>
           val nextStop = elevatorControlSystem.findNextStop(stopsRequests.get(elevatorId).get)
-          elevatorActor ! MoveRequest(elevatorId, nextStop)
+          val requestFuture = elevatorActor ? ElevatorProtocol.MoveRequest(elevatorId, nextStop)
+          requestFuture
+            .mapTo[BuildingCoordinatorProtocol.MoveRequestSuccess]
+            .map { moveRequestSuccess =>
+              val makeMoveFuture = elevatorActor ? ElevatorProtocol.MakeMove(elevatorId, nextStop)
+              makeMoveFuture
+                .mapTo[BuildingCoordinatorProtocol.MakeMoveSuccess]
+                .map { makeMoveSuccess: BuildingCoordinatorProtocol.MakeMoveSuccess =>
+                  println(s"[BuildingCoordinator] Elevator ${makeMoveSuccess.elevatorId} arrived at floor [${makeMoveSuccess.floor}]")
+                  removeStopRequest(makeMoveSuccess.elevatorId, makeMoveSuccess.floor)
+                  // If the floor was a PickUpRequest we should ask the following message DropOffRequest
+                  if (existPickUpRequest(makeMoveSuccess.elevatorId, makeMoveSuccess.floor)) {
+                    removePickUpRequest(makeMoveSuccess.elevatorId, makeMoveSuccess.floor)
+                    val dropOffFloor = generateRandomFloor(makeMoveSuccess.floor, makeMoveSuccess.direction)
+                    val dropOffMsg = BuildingCoordinatorProtocol.DropOffRequest(makeMoveSuccess.elevatorId, dropOffFloor)
+                    // println(s"[BuildingCoordinator] A passenger on [Elevator ${makeMoveSuccess.elevatorId}] request a $dropOffMsg")
+                    self ! dropOffMsg
+                  }
+                }
+            }
         }
 
-    case MoveRequestSuccess(elevatorId, floor, direction) =>
-      println(s"[BuildingCoordinator] Elevator $elevatorId arrived at floor [$floor]")
-      removeStopRequest(elevatorId, floor)
-
-      // If the floor was a PickUpRequest we should ask the following message DropOffRequest
-      if (existPickUpRequest(elevatorId, floor)) {
-        removePickUpRequest(elevatorId, floor)
-        // pickUpRequests -= floor
-        val dropOffFloor = generateRandomFloor(floor, direction)
-        val dropOffMsg = DropOffRequest(elevatorId, dropOffFloor)
-        println(s"[BuildingCoordinator] A passenger request a $dropOffMsg")
-        self ! dropOffMsg
-      }
-
-    case msg@DropOffRequest(elevatorId, dropOffFloor) =>
-      println(s"[BuildingCoordinator] received DropOffRequest to floor [$dropOffFloor]")
+    case msg@BuildingCoordinatorProtocol.DropOffRequest(elevatorId, dropOffFloor) =>
+      println(s"[BuildingCoordinator] A passenger on [Elevator $elevatorId] requested $msg")
       addStopRequest(elevatorId, dropOffFloor)
       // passenger already in the elevator, just need to tell the elevator to move
-      self ! MoveElevator(elevatorId)
+      self ! BuildingCoordinatorProtocol.MoveElevator(elevatorId)
 
-    case MoveElevatorFailure(exception) =>
-      println(s"[BuildingCoordinator] I could not move the elevator due to: $exception")
+    case message => println(s"[BuildingCoordinator] unknown message: $message")
   }
 
   def addStopRequest(elevatorId: Int, stop: Int) = {
@@ -155,7 +136,7 @@ case class BuildingCoordinator(actorName: String,
 
   /**
    * Generate a random floor to request the message
-   * [[org.github.felipegutierrez.elevatorsystem.actors.protocol.Protocol.DropOffRequest]].
+   * [[org.github.felipegutierrez.elevatorsystem.actors.protocol.BuildingCoordinatorProtocol.DropOffRequest]].
    *
    * @param floor
    * @param direction

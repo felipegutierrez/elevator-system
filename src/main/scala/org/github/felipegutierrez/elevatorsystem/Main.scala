@@ -1,7 +1,7 @@
 package org.github.felipegutierrez.elevatorsystem
 
 import akka.actor.{ActorSystem, Props}
-import org.github.felipegutierrez.elevatorsystem.actors.protocol.Protocol._
+import org.github.felipegutierrez.elevatorsystem.actors.protocol.ElevatorPanelProtocol
 import org.github.felipegutierrez.elevatorsystem.actors.{BuildingCoordinator, Panel}
 import org.github.felipegutierrez.elevatorsystem.services.{ElevatorControlSystem, ElevatorControlSystemFCFS}
 
@@ -11,7 +11,7 @@ import org.github.felipegutierrez.elevatorsystem.services.{ElevatorControlSystem
  * [[org.github.felipegutierrez.elevatorsystem.actors.BuildingCoordinator]], and [[org.github.felipegutierrez.elevatorsystem.actors.Elevator]]s.
  * The [[org.github.felipegutierrez.elevatorsystem.actors.BuildingCoordinator]] has one [[org.github.felipegutierrez.elevatorsystem.services.ElevatorControlSystem]]
  * that implements a First-Come-First-Served logic at [[org.github.felipegutierrez.elevatorsystem.services.ElevatorControlSystemFCFS]].
- * The communication among the actors are done using messages on the [[org.github.felipegutierrez.elevatorsystem.actors.protocol.Protocol]].
+ * The communication among the actors are done using messages on the [[org.github.felipegutierrez.elevatorsystem.actors.protocol.ElevatorPanelProtocol]].
  *
  */
 object Main {
@@ -19,14 +19,14 @@ object Main {
     println(s"\nThis is a control system for elevators")
 
     // testing system with 1 elevator and the First-Come-First-Serve controller
-    val numberOfFloors = 10
-    val numberOfElevators = 1
-    run(numberOfFloors, numberOfElevators, new ElevatorControlSystemFCFS(1))
+    //    val numberOfFloors = 10
+    //    val numberOfElevators = 1
+    //    run(numberOfFloors, numberOfElevators, new ElevatorControlSystemFCFS(1))
 
     // testing system with 2 elevators and the First-Come-First-Serve controller
-    //    val numberOfFloors = 10
-    //    val numberOfElevators = 2
-    //    run(numberOfFloors, numberOfElevators, new ElevatorControlSystemFCFS(numberOfElevators))
+    val numberOfFloors = 10
+    val numberOfElevators = 2
+    run(numberOfFloors, numberOfElevators, new ElevatorControlSystemFCFS(numberOfElevators))
   }
 
   def run(numberOfFloors: Int, numberOfElevators: Int, controller: ElevatorControlSystem): Unit = {
@@ -38,9 +38,9 @@ object Main {
       BuildingCoordinator.props(buildingCoordinatorActorName, numberOfFloors, numberOfElevators, controller),
       buildingCoordinatorActorName)
 
-    panelActor ! PickUp(4, +1, buildingCoordinatorActor)
-    panelActor ! PickUp(1, +1, buildingCoordinatorActor)
-    panelActor ! PickUp(10, -1, buildingCoordinatorActor)
-    panelActor ! PickUp(7, -1, buildingCoordinatorActor)
+    panelActor ! ElevatorPanelProtocol.PickUp(4, +1, buildingCoordinatorActor)
+    panelActor ! ElevatorPanelProtocol.PickUp(1, +1, buildingCoordinatorActor)
+    panelActor ! ElevatorPanelProtocol.PickUp(10, -1, buildingCoordinatorActor)
+    panelActor ! ElevatorPanelProtocol.PickUp(7, -1, buildingCoordinatorActor)
   }
 }

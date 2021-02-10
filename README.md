@@ -3,7 +3,7 @@
 [![CodeFactor](https://www.codefactor.io/repository/github/felipegutierrez/elevator-system/badge)](https://www.codefactor.io/repository/github/felipegutierrez/elevator-system)
 ![Lines of code](https://img.shields.io/tokei/lines/github/felipegutierrez/elevator-system)
 
-# An elevator system using Object Oriented Programming
+# An elevator system using Akka actors
 
 ### Basic commands:
 

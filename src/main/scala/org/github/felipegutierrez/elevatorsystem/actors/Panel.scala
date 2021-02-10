@@ -1,17 +1,17 @@
 package org.github.felipegutierrez.elevatorsystem.actors
 
 import akka.actor.{Actor, ActorLogging}
-import org.github.felipegutierrez.elevatorsystem.actors.protocol.Protocol._
+import org.github.felipegutierrez.elevatorsystem.actors.protocol.{BuildingCoordinatorProtocol, ElevatorPanelProtocol}
 
 /**
  * The [[org.github.felipegutierrez.elevatorsystem.actors.Panel]] actor is the entering point
  * to communicate with the [[org.github.felipegutierrez.elevatorsystem.actors.BuildingCoordinator]]
  * in order to call [[org.github.felipegutierrez.elevatorsystem.actors.Elevator]]s.
- * It is responsible to receive [[org.github.felipegutierrez.elevatorsystem.actors.protocol.Protocol.PickUp]]
+ * It is responsible to receive [[org.github.felipegutierrez.elevatorsystem.actors.protocol.ElevatorPanelProtocol.PickUp]]
  * from the [[org.github.felipegutierrez.elevatorsystem.Main]] application, send
- * [[org.github.felipegutierrez.elevatorsystem.actors.protocol.Protocol.PickUpRequest]] to the
+ * [[org.github.felipegutierrez.elevatorsystem.actors.protocol.BuildingCoordinatorProtocol.PickUpRequest]] to the
  * [[org.github.felipegutierrez.elevatorsystem.actors.BuildingCoordinator]], and finally receive back a
- * [[org.github.felipegutierrez.elevatorsystem.actors.protocol.Protocol.PickUpRequestSuccess]] messages.
+ * [[org.github.felipegutierrez.elevatorsystem.actors.protocol.ElevatorPanelProtocol.PickUpRequestSuccess]] messages.
  */
 class Panel extends Actor with ActorLogging {
 
@@ -22,11 +22,12 @@ class Panel extends Actor with ActorLogging {
    * @return
    */
   override def receive: Receive = {
-    case PickUp(pickUpFloor, direction, buildingActor) =>
-      val msg = PickUpRequest(pickUpFloor, direction)
+    case ElevatorPanelProtocol.PickUp(pickUpFloor, direction, buildingActor) =>
+      val msg = BuildingCoordinatorProtocol.PickUpRequest(pickUpFloor, direction)
       println(s"[Panel] received a PickUp from floor [$pickUpFloor] to go [$direction], sending $msg to the building coordinator")
       buildingActor ! msg
-    case PickUpRequestSuccess() =>
-      println(s"[Panel] PickUpRequest was requested")
+    case ElevatorPanelProtocol.PickUpRequestSuccess() => println(s"[Panel] PickUpRequest was requested")
+    case ElevatorPanelProtocol.PickUpRequestFailure() => println(s"[Panel] PickUpRequest failed")
+    case message => println(s"[Panel] unknown message: $message")
   }
 }
