@@ -1,5 +1,8 @@
 package org.github.felipegutierrez.elevatorsystem.actors.protocol
 
+/**
+ * Messages that the BuildingCoordinator actor can process.
+ */
 object BuildingCoordinatorProtocol {
 
   case class PickUpRequest(pickUpFloor: Int, direction: Int)

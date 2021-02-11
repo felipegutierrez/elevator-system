@@ -2,6 +2,14 @@ package org.github.felipegutierrez.elevatorsystem.services
 
 import scala.collection.immutable.Queue
 
+/**
+ * This is an elevator control system that uses the
+ * [[https://en.wikipedia.org/wiki/FIFO_(computing_and_electronics) FCFS algorithm]] algorithm to find the
+ * next stops on a list of requested stops.
+ *
+ * @param numberOfFloors
+ * @param numberOfElevators
+ */
 class ElevatorControlSystemFCFS(numberOfFloors: Int, numberOfElevators: Int)
   extends ElevatorControlSystem(numberOfFloors, numberOfElevators) {
 

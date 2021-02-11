@@ -21,6 +21,13 @@ object ElevatorControlSystem {
 
 }
 
+/**
+ * The abstract class for the control system of Elevators. The BuildingCoordinator must use one
+ * ElevatorControlSystem that implements the methods of this abstract class.
+ *
+ * @param numberOfFloors
+ * @param numberOfElevators
+ */
 abstract class ElevatorControlSystem(val numberOfFloors: Int, val numberOfElevators: Int) {
 
   var lastElevator = 0
