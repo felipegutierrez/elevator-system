@@ -8,7 +8,7 @@ import org.github.felipegutierrez.elevatorsystem.actors.protocol.{BuildingCoordi
 import org.github.felipegutierrez.elevatorsystem.actors.util.BuildingUtil
 import org.github.felipegutierrez.elevatorsystem.services._
 
-import scala.collection.mutable
+import scala.collection.immutable.Queue
 import scala.concurrent.duration._
 
 object BuildingCoordinator {
@@ -57,10 +57,9 @@ case class BuildingCoordinator(actorName: String,
 
   val elevators = createElevators(numberOfElevators)
 
-  var stopsRequests = mutable.Map[Int, mutable.Queue[Int]]()
-  var pickUpRequests = mutable.Map[Int, mutable.Queue[Int]]()
+  override def receive: Receive = operational(Map[Int, Queue[Int]](), Map[Int, Queue[Int]]())
 
-  override def receive: Receive = {
+  def operational(stopsRequests: Map[Int, Queue[Int]], pickUpRequests: Map[Int, Queue[Int]]): Receive = {
 
     case request@BuildingCoordinatorProtocol.PickUpRequest(pickUpFloor, direction) =>
       println(s"[BuildingCoordinator] received a $request from floor[$pickUpFloor] to go [$direction] and will find an elevator to send.")
@@ -72,18 +71,30 @@ case class BuildingCoordinator(actorName: String,
 
       val elevatorId = elevatorControlSystem.nextElevatorUsingRoundRobin()
 
-      addStopRequest(elevatorId, pickUpFloor)
-      addPickUpRequest(elevatorId, pickUpFloor)
+      val stopsRequestsElevator = stopsRequests.get(elevatorId).getOrElse(Queue[Int]())
+      val newStopsRequestsElevator = {
+        if (!stopsRequestsElevator.contains(pickUpFloor)) stopsRequestsElevator.enqueue(pickUpFloor)
+        else stopsRequestsElevator
+      }
+      val newStopsRequests = stopsRequests + (elevatorId -> newStopsRequestsElevator)
+
+      val pickUpRequestsElevator = pickUpRequests.get(elevatorId).getOrElse(Queue[Int]())
+      val newPickUpRequestsElevator = {
+        if (!pickUpRequestsElevator.contains(pickUpFloor)) pickUpRequestsElevator.enqueue(pickUpFloor)
+        else pickUpRequestsElevator
+      }
+      val newPickUpRequests = pickUpRequests + (elevatorId -> newPickUpRequestsElevator)
+
+      context.become(operational(newStopsRequests, newPickUpRequests))
+
+      sender() ! ElevatorPanelProtocol.PickUpRequestSuccess()
 
       self ! BuildingCoordinatorProtocol.MoveElevator(elevatorId)
-      sender() ! ElevatorPanelProtocol.PickUpRequestSuccess()
 
     case msg@BuildingCoordinatorProtocol.MoveElevator(elevatorId) =>
       println(s"[BuildingCoordinator] received $msg")
       val elevatorActor: ActorSelection = context.actorSelection(s"/user/$actorName/elevator_$elevatorId")
-      // val stateFuture = elevatorActor ? ElevatorProtocol.RequestElevatorState(elevatorId)
-      // stateFuture
-      (elevatorActor ? ElevatorProtocol.RequestElevatorState(elevatorId))
+      val stateFuture = (elevatorActor ? ElevatorProtocol.RequestElevatorState(elevatorId))
         .mapTo[BuildingCoordinatorProtocol.ElevatorState]
         .flatMap { state =>
           val nextStop = elevatorControlSystem.findNextStop(stopsRequests.get(elevatorId).get, state.currentFloor, state.direction)
@@ -94,70 +105,43 @@ case class BuildingCoordinator(actorName: String,
         .mapTo[BuildingCoordinatorProtocol.MakeMoveSuccess]
         .map { makeMoveSuccess =>
           println(s"[BuildingCoordinator] Elevator ${makeMoveSuccess.elevatorId} arrived at floor [${makeMoveSuccess.floor}]")
-          removeStopRequest(makeMoveSuccess.elevatorId, makeMoveSuccess.floor)
-          printStopRequests()
-          // If the floor was a PickUpRequest we should ask the following message DropOffRequest
-          if (existPickUpRequest(makeMoveSuccess.elevatorId, makeMoveSuccess.floor)) {
-            removePickUpRequest(makeMoveSuccess.elevatorId, makeMoveSuccess.floor)
-            val dropOffFloor = BuildingUtil.generateRandomFloor(numberOfFloors, makeMoveSuccess.floor, makeMoveSuccess.direction)
-            context.self ! BuildingCoordinatorProtocol.DropOffRequest(makeMoveSuccess.elevatorId, dropOffFloor)
+          // removeStopRequest(makeMoveSuccess.elevatorId, makeMoveSuccess.floor)
+          val stopsRequestsElevator = stopsRequests.get(elevatorId).getOrElse(Queue[Int]())
+          val newStopsRequestsElevator = stopsRequestsElevator.filterNot(_ == makeMoveSuccess.floor)
+          val newStopsRequests = stopsRequests + (elevatorId -> newStopsRequestsElevator)
+
+          val pickUpRequestsElevator = pickUpRequests.get(elevatorId).getOrElse(Queue[Int]())
+          val newPickUpRequestsElevator = {
+            if (pickUpRequestsElevator.contains(makeMoveSuccess.floor)) {
+              pickUpRequestsElevator.filterNot(_ == makeMoveSuccess.floor)
+            } else {
+              pickUpRequestsElevator
+            }
           }
+          val newPickUpRequests = pickUpRequests + (elevatorId -> newPickUpRequestsElevator)
+          context.become(operational(newStopsRequests, newPickUpRequests))
+
+          val dropOffFloor = BuildingUtil.generateRandomFloor(numberOfFloors, makeMoveSuccess.floor, makeMoveSuccess.direction)
+          context.self ! BuildingCoordinatorProtocol.DropOffRequest(makeMoveSuccess.elevatorId, dropOffFloor)
+
+          (newStopsRequests, newPickUpRequests)
         }
+    // context.become(operational(newState.flatMap(state => (state._1, state._2))))
 
     case msg@BuildingCoordinatorProtocol.DropOffRequest(elevatorId, dropOffFloor) =>
       println(s"[BuildingCoordinator] A passenger on [Elevator $elevatorId] requested $msg")
-      addStopRequest(elevatorId, dropOffFloor)
+      val stopsRequestsElevator = stopsRequests.get(elevatorId).getOrElse(Queue[Int]())
+      val newStopsRequestsElevator = {
+        if (!stopsRequestsElevator.contains(dropOffFloor)) stopsRequestsElevator.enqueue(dropOffFloor)
+        else stopsRequestsElevator
+      }
+      val newStopsRequests = stopsRequests + (elevatorId -> newStopsRequestsElevator)
+      context.become(operational(newStopsRequests, pickUpRequests))
+
       // passenger already in the elevator, just need to tell the elevator to move
-      // self ! BuildingCoordinatorProtocol.MoveElevator(elevatorId)
-      val elevatorActor: ActorSelection = context.actorSelection(s"/user/$actorName/elevator_$elevatorId")
-      (elevatorActor ? ElevatorProtocol.RequestElevatorState(elevatorId))
-        .mapTo[BuildingCoordinatorProtocol.ElevatorState]
-        .flatMap { state =>
-          val nextStop = elevatorControlSystem.findNextStop(stopsRequests.get(elevatorId).get, state.currentFloor, state.direction)
-          elevatorActor ? ElevatorProtocol.MoveRequest(elevatorId, nextStop)
-        }
-        .mapTo[BuildingCoordinatorProtocol.MoveRequestSuccess]
-        .flatMap(moveRequestSuccess => elevatorActor ? ElevatorProtocol.MakeMove(elevatorId, moveRequestSuccess.targetFloor))
-        .mapTo[BuildingCoordinatorProtocol.MakeMoveSuccess]
-        .map { makeMoveSuccess =>
-          println(s"[BuildingCoordinator] Elevator ${makeMoveSuccess.elevatorId} arrived at floor [${makeMoveSuccess.floor}]")
-          removeStopRequest(makeMoveSuccess.elevatorId, makeMoveSuccess.floor)
-        }
+      self ! BuildingCoordinatorProtocol.MoveElevator(elevatorId)
 
     case message => println(s"[BuildingCoordinator] unknown message: $message")
-  }
-
-  def addStopRequest(elevatorId: Int, stop: Int) = {
-    var value: mutable.Queue[Int] = stopsRequests.get(elevatorId).getOrElse(mutable.Queue[Int]())
-    if (!value.contains(stop)) value.enqueue(stop)
-    stopsRequests.update(elevatorId, value)
-  }
-
-  def addPickUpRequest(elevatorId: Int, stop: Int) = {
-    var value: mutable.Queue[Int] = pickUpRequests.get(elevatorId).getOrElse(mutable.Queue[Int]())
-    if (!value.contains(stop)) value.enqueue(stop)
-    pickUpRequests.update(elevatorId, value)
-  }
-
-  def removeStopRequest(elevatorId: Int, stop: Int) = {
-    var value: mutable.Queue[Int] = stopsRequests.get(elevatorId).getOrElse(mutable.Queue[Int]())
-    value.dequeueAll(_ == stop)
-    stopsRequests.update(elevatorId, value)
-  }
-
-  def printStopRequests() = {
-    println("stopsRequests: ")
-    stopsRequests.foreach(x => println(s"$x "))
-  }
-
-  def removePickUpRequest(elevatorId: Int, stop: Int) = {
-    var value: mutable.Queue[Int] = pickUpRequests.get(elevatorId).getOrElse(mutable.Queue[Int]())
-    value.dequeueAll(_ == stop)
-    pickUpRequests.update(elevatorId, value)
-  }
-
-  def existPickUpRequest(elevatorId: Int, stop: Int): Boolean = {
-    pickUpRequests.getOrElse(elevatorId, mutable.Queue[Int]()).contains(stop)
   }
 
   /**

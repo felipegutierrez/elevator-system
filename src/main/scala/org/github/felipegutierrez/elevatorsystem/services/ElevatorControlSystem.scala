@@ -1,6 +1,6 @@
 package org.github.felipegutierrez.elevatorsystem.services
 
-import scala.collection.mutable
+import scala.collection.immutable.Queue
 
 object ElevatorControlSystem {
 
@@ -31,5 +31,5 @@ abstract class ElevatorControlSystem(val numberOfFloors: Int, val numberOfElevat
     lastElevator
   }
 
-  def findNextStop(stopsRequested: mutable.Queue[Int], currentFloor: Int, direction: Int): Int
+  def findNextStop(stopsRequested: Queue[Int], currentFloor: Int, direction: Int): Int
 }
