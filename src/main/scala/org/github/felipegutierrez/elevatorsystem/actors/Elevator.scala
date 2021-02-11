@@ -4,6 +4,7 @@ import akka.actor.{Actor, ActorLogging, Props, Stash}
 import akka.util.Timeout
 import org.github.felipegutierrez.elevatorsystem.actors.protocol.{BuildingCoordinatorProtocol, ElevatorProtocol}
 
+import scala.concurrent.ExecutionContext
 import scala.concurrent.duration._
 
 object Elevator {
@@ -22,6 +23,7 @@ object Elevator {
  *
  */
 case class Elevator(actorId: Int, actorName: String) extends Actor with ActorLogging with Stash {
+  implicit val executionContext: ExecutionContext = context.dispatcher
   implicit val timeout = Timeout(3 seconds)
 
   override def receive(): Receive = stopped(0, 0, 0)
@@ -39,12 +41,10 @@ case class Elevator(actorId: Int, actorName: String) extends Actor with ActorLog
       else if (currentFloor > newTargetFloor) -1
       else 0
 
-      // unstash the messages and change the handler
-      unstashAll()
-      context.become(moving(currentFloor, targetFloor, newDirection))
-
-      // return the answer to the sender only after we changed the handler
       sender() ! BuildingCoordinatorProtocol.MoveRequestSuccess(elevatorId, newTargetFloor)
+
+      unstashAll() // unstash the messages and change the handler
+      context.become(moving(currentFloor, newTargetFloor, newDirection))
     case msg@ElevatorProtocol.RequestElevatorState(elevatorId) =>
       println(s"[Elevator $actorId] RequestElevatorState received")
       sender() ! BuildingCoordinatorProtocol.ElevatorState(elevatorId, currentFloor, targetFloor, direction)
@@ -71,8 +71,8 @@ case class Elevator(actorId: Int, actorName: String) extends Actor with ActorLog
       Thread.sleep(milliseconds)
 
       sender() ! BuildingCoordinatorProtocol.MakeMoveSuccess(elevatorId, newTargetFloor, direction)
-      // unstash the messages and change the handler
-      unstashAll()
+
+      unstashAll() // unstash the messages and change the handler
       context.become(stopped(newTargetFloor, newTargetFloor, 0))
     case message =>
       println(s"[Elevator $actorId] msg $message stashed because the elevator is moving!")
