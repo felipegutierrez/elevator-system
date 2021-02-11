@@ -1,11 +1,12 @@
 package org.github.felipegutierrez.elevatorsystem.services
 
+import scala.collection.mutable
 import scala.collection.mutable.ListBuffer
 
 class ElevatorControlSystemScan(numberOfFloors: Int, numberOfElevators: Int)
   extends ElevatorControlSystem(numberOfFloors, numberOfElevators) {
 
-  override def findNextStop(stopsRequested: Set[Int], currentFloor: Int, direction: Int): Int = {
+  override def findNextStop(stopsRequested: mutable.Queue[Int], currentFloor: Int, direction: Int): Int = {
 
     var left = ListBuffer[Int]()
     var right = ListBuffer[Int]()

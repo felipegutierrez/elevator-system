@@ -6,7 +6,7 @@ import akka.util.Timeout
 import org.github.felipegutierrez.elevatorsystem.actors.exceptions.BuildingCoordinatorException
 import org.github.felipegutierrez.elevatorsystem.actors.protocol.{BuildingCoordinatorProtocol, ElevatorPanelProtocol, ElevatorProtocol}
 import org.github.felipegutierrez.elevatorsystem.actors.util.BuildingUtil
-import org.github.felipegutierrez.elevatorsystem.services.{ElevatorControlSystem, ElevatorControlSystemFCFS}
+import org.github.felipegutierrez.elevatorsystem.services._
 
 import scala.collection.mutable
 import scala.concurrent.duration._
@@ -15,9 +15,20 @@ object BuildingCoordinator {
   def props(actorName: String = "buildingCoordinatorActor",
             numberOfFloors: Int = 10,
             numberOfElevators: Int = 1,
-            elevatorControlSystem: ElevatorControlSystem = new ElevatorControlSystemFCFS(10, 1)) = {
+            elevatorControlSystemType: ElevatorControlSystem.ElevatorControlSystemType = ElevatorControlSystem.FCFSControlSystem) = {
+
     if (numberOfElevators < 0 || numberOfElevators > 16) throw new BuildingCoordinatorException("Number of elevators must be between 1 and 16")
     if (numberOfFloors < 2) throw new BuildingCoordinatorException("This is not a building. It is a house")
+
+    val elevatorControlSystem: ElevatorControlSystem = {
+      if (elevatorControlSystemType == ElevatorControlSystem.FCFSControlSystem)
+        new ElevatorControlSystemFCFS(numberOfFloors, numberOfElevators)
+      else if (elevatorControlSystemType == ElevatorControlSystem.ScanControlSystem)
+        new ElevatorControlSystemScan(numberOfFloors, numberOfElevators)
+      else
+        throw new RuntimeException("Elevator system type unimplemented")
+    }
+
     Props(new BuildingCoordinator(actorName, numberOfFloors, numberOfElevators, elevatorControlSystem))
   }
 }
@@ -46,8 +57,8 @@ case class BuildingCoordinator(actorName: String,
 
   val elevators = createElevators(numberOfElevators)
 
-  var stopsRequests = mutable.Map[Int, Set[Int]]()
-  var pickUpRequests = mutable.Map[Int, Set[Int]]()
+  var stopsRequests = mutable.Map[Int, mutable.Queue[Int]]()
+  var pickUpRequests = mutable.Map[Int, mutable.Queue[Int]]()
 
   override def receive: Receive = {
 
@@ -107,31 +118,31 @@ case class BuildingCoordinator(actorName: String,
   }
 
   def addStopRequest(elevatorId: Int, stop: Int) = {
-    var value: Set[Int] = stopsRequests.get(elevatorId).getOrElse(Set[Int]())
-    value += stop
+    var value: mutable.Queue[Int] = stopsRequests.get(elevatorId).getOrElse(mutable.Queue[Int]())
+    if (!value.contains(stop)) value.enqueue(stop)
     stopsRequests.update(elevatorId, value)
   }
 
   def removeStopRequest(elevatorId: Int, stop: Int) = {
-    var value: Set[Int] = stopsRequests.get(elevatorId).getOrElse(Set[Int]())
-    value -= stop
+    var value: mutable.Queue[Int] = stopsRequests.get(elevatorId).getOrElse(mutable.Queue[Int]())
+    value.dequeueAll(_ == stop)
     stopsRequests.update(elevatorId, value)
   }
 
   def addPickUpRequest(elevatorId: Int, stop: Int) = {
-    var value: Set[Int] = pickUpRequests.get(elevatorId).getOrElse(Set[Int]())
-    value += stop
+    var value: mutable.Queue[Int] = pickUpRequests.get(elevatorId).getOrElse(mutable.Queue[Int]())
+    if (!value.contains(stop)) value.enqueue(stop)
     pickUpRequests.update(elevatorId, value)
   }
 
   def removePickUpRequest(elevatorId: Int, stop: Int) = {
-    var value: Set[Int] = pickUpRequests.get(elevatorId).getOrElse(Set[Int]())
-    value -= stop
+    var value: mutable.Queue[Int] = pickUpRequests.get(elevatorId).getOrElse(mutable.Queue[Int]())
+    value.dequeueAll(_ == stop)
     pickUpRequests.update(elevatorId, value)
   }
 
   def existPickUpRequest(elevatorId: Int, stop: Int): Boolean = {
-    pickUpRequests.getOrElse(elevatorId, Set[Int]()).contains(stop)
+    pickUpRequests.getOrElse(elevatorId, mutable.Queue[Int]()).contains(stop)
   }
 
   /**

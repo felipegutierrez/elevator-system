@@ -4,7 +4,7 @@ import akka.actor.{ActorSystem, Props}
 import org.github.felipegutierrez.elevatorsystem.actors.protocol.ElevatorPanelProtocol
 import org.github.felipegutierrez.elevatorsystem.actors.util.BuildingUtil
 import org.github.felipegutierrez.elevatorsystem.actors.{BuildingCoordinator, Panel}
-import org.github.felipegutierrez.elevatorsystem.services.{ElevatorControlSystem, ElevatorControlSystemFCFS, ElevatorControlSystemScan}
+import org.github.felipegutierrez.elevatorsystem.services.ElevatorControlSystem
 
 /**
  * This is the main class of the project. It is the entry point to simulate the elevator system.
@@ -34,93 +34,82 @@ object Main {
     println(s"")
     print(s"Choose your option: ")
 
-    val option01: Int = scala.io.StdIn.readInt()
-    option01 match {
-      // cases for the First-Come-First-Serve controller
-      case 1 =>
+    val option = scala.io.StdIn.readLine()
+    option match {
+      // ################## cases for the First-Come-First-Serve controller ##################
+      case "1" =>
         // testing system with 1 elevator and the First-Come-First-Serve controller
-        val numberOfFloors = 10
-        val numberOfElevators = 1
-        run(numberOfFloors, numberOfElevators, new ElevatorControlSystemFCFS(numberOfFloors, numberOfElevators))
-      case 2 =>
+        run(10, 1, ElevatorControlSystem.FCFSControlSystem)
+      case "2" =>
         // testing system with 2 elevators and the First-Come-First-Serve controller
-        val numberOfFloors = 10
-        val numberOfElevators = 2
-        run(numberOfFloors, numberOfElevators, new ElevatorControlSystemFCFS(numberOfFloors, numberOfElevators))
-      case 3 =>
+        run(10, 2, ElevatorControlSystem.FCFSControlSystem)
+      case "3" =>
         // testing system of a skyscraper building with 1 elevator and the First-Come-First-Serve controller
-        val numberOfFloors = 100
-        val numberOfElevators = 1
-        val numberOfRandomPickUps = 40
-        run(numberOfFloors, numberOfElevators, new ElevatorControlSystemFCFS(numberOfFloors, numberOfElevators), numberOfRandomPickUps)
-      case 4 =>
+        run(100, 1, ElevatorControlSystem.FCFSControlSystem, 40)
+      case "4" =>
         // testing system of a skyscraper building with 10 elevators and the First-Come-First-Serve controller
-        val numberOfFloors = 100
-        val numberOfElevators = 10
-        val numberOfRandomPickUps = 40
-        run(numberOfFloors, numberOfElevators, new ElevatorControlSystemFCFS(numberOfFloors, numberOfElevators), numberOfRandomPickUps)
-      // cases for the SCAN controller
-      case 5 =>
+        run(100, 10, ElevatorControlSystem.FCFSControlSystem, 40)
+      // ################## cases for the SCAN controller ##################
+      case "5" =>
         // testing system with 1 elevator and the SCAN controller
-        val numberOfFloors = 10
-        val numberOfElevators = 1
-        run(numberOfFloors, numberOfElevators, new ElevatorControlSystemScan(numberOfFloors, numberOfElevators))
-      case 6 =>
+        run(10, 1, ElevatorControlSystem.ScanControlSystem)
+      case "6" =>
         // testing system with 2 elevators and the SCAN controller
-        val numberOfFloors = 10
-        val numberOfElevators = 2
-        run(numberOfFloors, numberOfElevators, new ElevatorControlSystemScan(numberOfFloors, numberOfElevators))
-      case 7 =>
+        run(10, 2, ElevatorControlSystem.ScanControlSystem)
+      case "7" =>
         // testing system of a skyscraper building with 1 elevator and the SCAN controller
-        val numberOfFloors = 100
-        val numberOfElevators = 1
-        val numberOfRandomPickUps = 40
-        run(numberOfFloors, numberOfElevators, new ElevatorControlSystemScan(numberOfFloors, numberOfElevators), numberOfRandomPickUps)
-      case 8 =>
+        run(100, 1, ElevatorControlSystem.ScanControlSystem, 40)
+      case "8" =>
         // testing system of a skyscraper building with 10 elevators and the SCAN controller
-        val numberOfFloors = 100
-        val numberOfElevators = 10
-        val numberOfRandomPickUps = 40
-        run(numberOfFloors, numberOfElevators, new ElevatorControlSystemScan(numberOfFloors, numberOfElevators), numberOfRandomPickUps)
+        run(100, 10, ElevatorControlSystem.ScanControlSystem, 40)
       case _ => println(s"unavailable option")
     }
   }
 
-  def run(numberOfFloors: Int, numberOfElevators: Int, controller: ElevatorControlSystem, numberOfRandomPickUps: Int): Unit = {
+  /**
+   * * This method simulates the ElevatorSystem with 2 actors named panelActor and buildingCoordinatorActor.
+   * It is possible to set the number of floors of the building, the number of elevators, which elevator controller
+   * system the building will use to coordinate the elevators, and the number of pickUps.
+   * If the numberOfRandomPickUps is set to 0, the panelActor will send four pre-defined pickUps to the building:
+   * PickUp(4, +1)
+   * PickUp(1, +1)
+   * PickUp(10, -1)
+   * PickUp(7, -1)
+   * If the numberOfRandomPickUps is greater than 0 the simulation will generate the given number of random pickUps.
+   *
+   * @param numberOfFloors
+   * @param numberOfElevators
+   * @param elevatorControlSystemType
+   * @param numberOfRandomPickUps
+   */
+  def run(numberOfFloors: Int, numberOfElevators: Int, elevatorControlSystemType: ElevatorControlSystem.ElevatorControlSystemType, numberOfRandomPickUps: Int = 0): Unit = {
 
     val system = ActorSystem("ElevatorSystem")
     val panelActor = system.actorOf(Props[Panel], "panelActor")
     val buildingCoordinatorActorName = "buildingCoordinatorActor"
     val buildingCoordinatorActor = system.actorOf(
-      BuildingCoordinator.props(buildingCoordinatorActorName, numberOfFloors, numberOfElevators, controller),
+      BuildingCoordinator.props(buildingCoordinatorActorName, numberOfFloors, numberOfElevators, elevatorControlSystemType),
       buildingCoordinatorActorName)
 
-    for (i <- 0 until numberOfRandomPickUps) {
-
-      val randomFloor = BuildingUtil.generateRandomFloor(numberOfFloors, i, if (i % 2 == 0) 1 else -1)
-      val randomDirection = {
-        if (randomFloor < 5) +1
-        else if (randomFloor > numberOfFloors - 5) -1
-        else {
-          if (randomFloor % 2 == 0) 1 else -1
+    if (numberOfRandomPickUps <= 0) {
+      // pre defined pick ups
+      panelActor ! ElevatorPanelProtocol.PickUp(4, +1, buildingCoordinatorActor)
+      panelActor ! ElevatorPanelProtocol.PickUp(1, +1, buildingCoordinatorActor)
+      panelActor ! ElevatorPanelProtocol.PickUp(10, -1, buildingCoordinatorActor)
+      panelActor ! ElevatorPanelProtocol.PickUp(7, -1, buildingCoordinatorActor)
+    } else {
+      // random pick ups
+      for (i <- 0 until numberOfRandomPickUps) {
+        val randomFloor = BuildingUtil.generateRandomFloor(numberOfFloors, i, if (i % 2 == 0) 1 else -1)
+        val randomDirection = {
+          if (randomFloor < 5) +1
+          else if (randomFloor > numberOfFloors - 5) -1
+          else {
+            if (randomFloor % 2 == 0) 1 else -1
+          }
         }
+        panelActor ! ElevatorPanelProtocol.PickUp(randomFloor, randomDirection, buildingCoordinatorActor)
       }
-      panelActor ! ElevatorPanelProtocol.PickUp(randomFloor, randomDirection, buildingCoordinatorActor)
     }
-  }
-
-  def run(numberOfFloors: Int, numberOfElevators: Int, controller: ElevatorControlSystem): Unit = {
-
-    val system = ActorSystem("ElevatorSystem")
-    val panelActor = system.actorOf(Props[Panel], "panelActor")
-    val buildingCoordinatorActorName = "buildingCoordinatorActor"
-    val buildingCoordinatorActor = system.actorOf(
-      BuildingCoordinator.props(buildingCoordinatorActorName, numberOfFloors, numberOfElevators, controller),
-      buildingCoordinatorActorName)
-
-    panelActor ! ElevatorPanelProtocol.PickUp(4, +1, buildingCoordinatorActor)
-    panelActor ! ElevatorPanelProtocol.PickUp(1, +1, buildingCoordinatorActor)
-    panelActor ! ElevatorPanelProtocol.PickUp(10, -1, buildingCoordinatorActor)
-    panelActor ! ElevatorPanelProtocol.PickUp(7, -1, buildingCoordinatorActor)
   }
 }
