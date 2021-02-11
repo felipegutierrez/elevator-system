@@ -2,6 +2,7 @@ package org.github.felipegutierrez.elevatorsystem.actors
 
 import akka.actor.{Actor, ActorLogging, ActorRef, ActorSelection, Props}
 import akka.pattern.ask
+import akka.pattern.pipe
 import akka.util.Timeout
 import org.github.felipegutierrez.elevatorsystem.actors.exceptions.BuildingCoordinatorException
 import org.github.felipegutierrez.elevatorsystem.actors.protocol.{BuildingCoordinatorProtocol, ElevatorPanelProtocol, ElevatorProtocol}
@@ -105,7 +106,6 @@ case class BuildingCoordinator(actorName: String,
         .mapTo[BuildingCoordinatorProtocol.MakeMoveSuccess]
         .map { makeMoveSuccess =>
           println(s"[BuildingCoordinator] Elevator ${makeMoveSuccess.elevatorId} arrived at floor [${makeMoveSuccess.floor}]")
-          // removeStopRequest(makeMoveSuccess.elevatorId, makeMoveSuccess.floor)
           val stopsRequestsElevator = stopsRequests.get(elevatorId).getOrElse(Queue[Int]())
           val newStopsRequestsElevator = stopsRequestsElevator.filterNot(_ == makeMoveSuccess.floor)
           val newStopsRequests = stopsRequests + (elevatorId -> newStopsRequestsElevator)
@@ -123,8 +123,6 @@ case class BuildingCoordinator(actorName: String,
 
           val dropOffFloor = BuildingUtil.generateRandomFloor(numberOfFloors, makeMoveSuccess.floor, makeMoveSuccess.direction)
           context.self ! BuildingCoordinatorProtocol.DropOffRequest(makeMoveSuccess.elevatorId, dropOffFloor)
-
-          (newStopsRequests, newPickUpRequests)
         }
     // context.become(operational(newState.flatMap(state => (state._1, state._2))))
 

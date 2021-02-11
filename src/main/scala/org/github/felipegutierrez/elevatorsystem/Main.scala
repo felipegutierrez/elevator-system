@@ -10,9 +10,12 @@ import org.github.felipegutierrez.elevatorsystem.services.ElevatorControlSystem
  * This is the main class of the project. It is the entry point to simulate the elevator system.
  * The systems is composed of three actors named [[org.github.felipegutierrez.elevatorsystem.actors.Panel]],
  * [[org.github.felipegutierrez.elevatorsystem.actors.BuildingCoordinator]], and [[org.github.felipegutierrez.elevatorsystem.actors.Elevator]]s.
- * The [[org.github.felipegutierrez.elevatorsystem.actors.BuildingCoordinator]] has one [[org.github.felipegutierrez.elevatorsystem.services.ElevatorControlSystem]]
- * that implements a First-Come-First-Served logic at [[org.github.felipegutierrez.elevatorsystem.services.ElevatorControlSystemFCFS]].
- * The communication among the actors are done using messages on the [[org.github.felipegutierrez.elevatorsystem.actors.protocol.ElevatorPanelProtocol]].
+ * The [[org.github.felipegutierrez.elevatorsystem.actors.BuildingCoordinator]] is the dispatcher that coordinates how the elevators move on the building.
+ * To accomplish this task uses one [[org.github.felipegutierrez.elevatorsystem.services.ElevatorControlSystem]]
+ * which can be a controller that implements the [[https://en.wikipedia.org/wiki/FIFO_(computing_and_electronics) FCFS algorithm]] at [[org.github.felipegutierrez.elevatorsystem.services.ElevatorControlSystemFCFS]]
+ * or a controller that implements the [[https://en.wikipedia.org/wiki/Elevator_algorithm SCAN algorithm]] at [[org.github.felipegutierrez.elevatorsystem.services.ElevatorControlSystemScan]].
+ * The communication among the actors are done using messages on the [[org.github.felipegutierrez.elevatorsystem.actors.protocol.ElevatorPanelProtocol]],
+ * the [[org.github.felipegutierrez.elevatorsystem.actors.protocol.BuildingCoordinatorProtocol]], and the [[org.github.felipegutierrez.elevatorsystem.actors.protocol.ElevatorProtocol]].
  *
  */
 object Main {
