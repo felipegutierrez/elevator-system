@@ -7,21 +7,26 @@ class ElevatorControlSystemScan(numberOfFloors: Int, numberOfElevators: Int)
   extends ElevatorControlSystem(numberOfFloors, numberOfElevators) {
 
   override def findNextStop(stopsRequested: Queue[Int], currentFloor: Int, direction: Int): Int = {
+    if (stopsRequested.isEmpty) -1
+    else {
+      var left = ListBuffer[Int]()
+      var right = ListBuffer[Int]()
 
-    var left = ListBuffer[Int]()
-    var right = ListBuffer[Int]()
+      stopsRequested.foreach { stop =>
+        if (stop < currentFloor) left += stop
+        else if (stop > currentFloor) right += stop
+      }
+      left = left.sorted
+      right = right.sorted
 
-    // if (direction == -1) left += 0
-    // else if (direction == +1) right += (numberOfFloors - 1)
-
-    stopsRequested.foreach { stop =>
-      if (stop < currentFloor) left += stop
-      else if (stop > currentFloor) right += stop
+      if (direction == -1) {
+        if (left.isEmpty) -1
+        else left.last
+      }
+      else {
+        if (right.isEmpty) -1
+        else right.head
+      }
     }
-    left = left.sorted
-    right = right.sorted
-
-    if (direction == -1) left.last
-    else right.head
   }
 }

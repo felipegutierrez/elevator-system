@@ -25,7 +25,7 @@ class BuildingCoordinatorSpec extends TestKit(ActorSystem("BuildingCoordinatorSp
     val buildingActor = system.actorOf(BuildingCoordinator.props(actorName, numberOfFloors, numberOfElevators), actorName)
 
     "be the only one that moves elevators" in {
-      buildingActor ! BuildingCoordinatorProtocol.MoveElevator(1)
+      buildingActor ! BuildingCoordinatorProtocol.MoveElevator(1, 1)
       expectNoMessage()
     }
     "receive pick_up requests" in {
@@ -37,7 +37,7 @@ class BuildingCoordinatorSpec extends TestKit(ActorSystem("BuildingCoordinatorSp
       expectNoMessage()
     }
     "move only existing elevators" in {
-      buildingActor ! BuildingCoordinatorProtocol.MoveElevator(2)
+      buildingActor ! BuildingCoordinatorProtocol.MoveElevator(2, 1)
     }
   }
 

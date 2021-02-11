@@ -1,6 +1,5 @@
 package org.github.felipegutierrez.elevatorsystem.actors.util
 
-import scala.collection.immutable.Queue
 import scala.util.Random
 
 object BuildingUtil {
@@ -24,19 +23,5 @@ object BuildingUtil {
       if (currentFloor == 1) 0
       else Random.nextInt(currentFloor - 1)
     }
-  }
-
-  def run(args: Array[String]): Unit = {
-
-    val stopsRequests = Map[Int, Queue[Int]]()
-    val myQueue = Queue[Int]()
-    val myQueue1 = myQueue.enqueue(1)
-    val myQueue2 = myQueue1.enqueue(2)
-    val myQueue3 = myQueue2.enqueue(3)
-    val stopsRequests2 = stopsRequests + (1 -> myQueue3)
-    val stopsRequests3 = stopsRequests2 + (2 -> myQueue3)
-    stopsRequests3.foreach(x => println(s"$x "))
-
-    stopsRequests3.get(3).getOrElse()
   }
 }
