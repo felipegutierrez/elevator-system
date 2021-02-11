@@ -22,28 +22,29 @@ object Elevator {
  *
  */
 case class Elevator(actorId: Int, actorName: String) extends Actor with ActorLogging with Stash {
-  var currentFloor = 0
-  var targetFloor = 0
-  var direction = 0
   implicit val timeout = Timeout(3 seconds)
 
-  override def receive(): Receive = stopped()
+  override def receive(): Receive = stopped(0, 0, 0)
 
   /**
    * Handler to receive messages when the Elevator is stopped
    *
    * @return
    */
-  def stopped(): Receive = {
-    case request@ElevatorProtocol.MoveRequest(elevatorId, floor) =>
-      println(s"[Elevator $actorId] $request received to floor $floor")
+  def stopped(currentFloor: Int, targetFloor: Int, direction: Int): Receive = {
+    case request@ElevatorProtocol.MoveRequest(elevatorId, newTargetFloor) =>
+      println(s"[Elevator $actorId] $request received to floor $newTargetFloor")
+
+      val newDirection = if (currentFloor < newTargetFloor) +1
+      else if (currentFloor > newTargetFloor) -1
+      else 0
 
       // unstash the messages and change the handler
       unstashAll()
-      context.become(moving())
+      context.become(moving(currentFloor, targetFloor, newDirection))
 
       // return the answer to the sender only after we changed the handler
-      sender() ! BuildingCoordinatorProtocol.MoveRequestSuccess(elevatorId, floor)
+      sender() ! BuildingCoordinatorProtocol.MoveRequestSuccess(elevatorId, newTargetFloor)
     case msg@ElevatorProtocol.RequestElevatorState(elevatorId) =>
       println(s"[Elevator $actorId] RequestElevatorState received")
       sender() ! BuildingCoordinatorProtocol.ElevatorState(elevatorId, currentFloor, targetFloor, direction)
@@ -57,27 +58,22 @@ case class Elevator(actorId: Int, actorName: String) extends Actor with ActorLog
    *
    * @return
    */
-  def moving(): Receive = {
-    case msg@ElevatorProtocol.MakeMove(elevatorId, floor) =>
-      println(s"[Elevator $actorId] $msg received")
-      targetFloor = floor
-      if (currentFloor < targetFloor) direction = +1
-      else if (currentFloor > targetFloor) direction = -1
-      else direction = 0
+  def moving(currentFloor: Int, targetFloor: Int, direction: Int): Receive = {
+    case msg@ElevatorProtocol.MakeMove(elevatorId, newTargetFloor) =>
+      // println(s"[Elevator $actorId] $msg received")
+      val milliseconds =
+        if (currentFloor < newTargetFloor) (newTargetFloor - currentFloor) * 10
+        else if (currentFloor > newTargetFloor) (currentFloor - newTargetFloor) * 10
+        else 0
 
       // we already change the handler so every message receives after this line will be stashed because the Elevator is moving
-      val milliseconds = (if (currentFloor < targetFloor) targetFloor - currentFloor else currentFloor - targetFloor) * 10
-      println(s"[Elevator $actorId] moving from floor $currentFloor to floor $targetFloor in $milliseconds milliseconds ...\n")
+      println(s"[Elevator $actorId] moving from floor $currentFloor to floor $newTargetFloor in ${milliseconds} milliseconds ...\n")
       Thread.sleep(milliseconds)
 
-      currentFloor = targetFloor
-      val oldDirection = direction
-      direction = 0
-
-      sender() ! BuildingCoordinatorProtocol.MakeMoveSuccess(elevatorId, targetFloor, oldDirection)
+      sender() ! BuildingCoordinatorProtocol.MakeMoveSuccess(elevatorId, newTargetFloor, direction)
       // unstash the messages and change the handler
       unstashAll()
-      context.become(stopped())
+      context.become(stopped(newTargetFloor, newTargetFloor, 0))
     case message =>
       println(s"[Elevator $actorId] msg $message stashed because the elevator is moving!")
       stash()
