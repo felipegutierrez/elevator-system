@@ -35,6 +35,8 @@ object Main {
     println(s"7 - Building with 100 floors and 1 elevator and 40 random pickUp requests")
     println(s"8 - Building with 100 floors and 10 elevators and 40 random pickUp requests")
     println(s"")
+    println(s"9 - Interactive start configuration")
+    println(s"")
     print(s"Choose your option: ")
 
     val option = scala.io.StdIn.readLine()
@@ -64,7 +66,23 @@ object Main {
         run(100, 1, ElevatorControlSystem.ScanControlSystem, 40)
       case "8" =>
         // testing system of a skyscraper building with 10 elevators and the SCAN controller
-        run(100, 10, ElevatorControlSystem.ScanControlSystem, 40)
+        run(100, 10, ElevatorControlSystem.FCFSControlSystem, 40)
+      // ################## interactive start configuration ##################
+      case "9" =>
+        print("Number of floors in the building [2-100]: ")
+        val numberOfFloors = scala.io.StdIn.readInt()
+        print("Number of elevators in the building [1-16]: ")
+        val numberOfElevators = scala.io.StdIn.readInt()
+        print("Elevator control system [1 - FCFS, 2 - SCAN]: ")
+        val elevatorControl = scala.io.StdIn.readInt()
+        print("Number of random pickups to generate: ")
+        val randomPickUps = scala.io.StdIn.readInt()
+        val elevatorControlSystem = {
+          if (elevatorControl == 1) ElevatorControlSystem.FCFSControlSystem
+          else if (elevatorControl == 2) ElevatorControlSystem.ScanControlSystem
+          else throw new RuntimeException("wrong elevator controller system")
+        }
+        run(numberOfFloors, numberOfElevators, elevatorControlSystem, randomPickUps)
       case _ => println(s"unavailable option")
     }
   }
