@@ -3,7 +3,7 @@ package org.github.felipegutierrez.elevatorsystem.actors
 import akka.actor.ActorSystem
 import akka.testkit.{EventFilter, ImplicitSender, TestKit}
 import org.github.felipegutierrez.elevatorsystem.actors.exceptions.BuildingCoordinatorException
-import org.github.felipegutierrez.elevatorsystem.actors.protocol.{BuildingCoordinatorProtocol, ElevatorPanelProtocol}
+import org.github.felipegutierrez.elevatorsystem.actors.protocol._
 import org.scalatest.BeforeAndAfterAll
 import org.scalatest.matchers.should.Matchers
 import org.scalatest.wordspec.AnyWordSpecLike
@@ -116,6 +116,24 @@ class BuildingCoordinatorSpec extends TestKit(ActorSystem("BuildingCoordinatorSp
         val direction = 1
         buildingActor ! BuildingCoordinatorProtocol.PickUpRequest(floor, direction)
         expectNoMessage()
+      }
+    }
+  }
+
+  "the BuildingCoordinator actor" should {
+    "only receive messages that belong to its protocol" in {
+      EventFilter.warning(pattern = s"[BuildingCoordinator] unknown message: [a-z]", occurrences = 0) intercept {
+        val buildingActor = system.actorOf(BuildingCoordinator.props("building", 10, 2), "building")
+        buildingActor ! BuildingCoordinatorProtocol.PickUpRequest(+4, +1)
+        buildingActor ! BuildingCoordinatorProtocol.MoveElevator(1, +1)
+        buildingActor ! BuildingCoordinatorProtocol.DropOffRequest(1, 8, +1)
+      }
+    }
+
+    "not receive messages that do not belong to its protocol" in {
+      EventFilter.warning(message = "[BuildingCoordinator] unknown message: PickUpRequestSuccess", occurrences = 1) intercept {
+        val buildingActor = system.actorOf(BuildingCoordinator.props("building1", 10, 2), "building1")
+        buildingActor ! ElevatorPanelProtocol.PickUpRequestSuccess
       }
     }
   }

@@ -28,6 +28,6 @@ class Panel extends Actor with ActorLogging {
       buildingActor ! msg
     case ElevatorPanelProtocol.PickUpRequestSuccess() => println(s"[Panel] PickUpRequest was requested")
     case ElevatorPanelProtocol.PickUpRequestFailure() => println(s"[Panel] PickUpRequest failed")
-    case message => println(s"[Panel] unknown message: $message")
+    case message => log.warning(s"[Panel] unknown message: $message")
   }
 }

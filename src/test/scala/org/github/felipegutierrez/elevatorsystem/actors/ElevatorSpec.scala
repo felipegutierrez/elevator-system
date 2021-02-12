@@ -1,8 +1,8 @@
 package org.github.felipegutierrez.elevatorsystem.actors
 
 import akka.actor.ActorSystem
-import akka.testkit.{ImplicitSender, TestKit}
-import org.github.felipegutierrez.elevatorsystem.actors.protocol.{BuildingCoordinatorProtocol, ElevatorProtocol}
+import akka.testkit.{EventFilter, ImplicitSender, TestKit}
+import org.github.felipegutierrez.elevatorsystem.actors.protocol.{BuildingCoordinatorProtocol, ElevatorPanelProtocol, ElevatorProtocol}
 import org.scalatest.BeforeAndAfterAll
 import org.scalatest.matchers.should.Matchers
 import org.scalatest.wordspec.AnyWordSpecLike
@@ -29,6 +29,24 @@ class ElevatorSpec extends TestKit(ActorSystem("ElevatorSpec"))
       expectMsg(BuildingCoordinatorProtocol.MoveRequestSuccess(1, 10))
       elevatorActor ! ElevatorProtocol.MakeMove(1, 10)
       expectMsg(BuildingCoordinatorProtocol.MakeMoveSuccess(1, 10, 1))
+    }
+  }
+
+  "the Elevator actor" should {
+    "only receive messages that belong to its protocol" in {
+      val id = 2
+      EventFilter.warning(pattern = s"[Elevator $id] unknown message: [a-z]", occurrences = 0) intercept {
+        val elevatorActor = system.actorOf(Elevator.props(id, s"elevator_$id"), s"elevator_$id")
+        elevatorActor ! ElevatorProtocol.RequestElevatorState(id)
+      }
+    }
+
+    "not receive messages that do not belong to its protocol" in {
+      val id = 3
+      EventFilter.warning(message = s"[Elevator $id] unknown message: PickUp", occurrences = 1) intercept {
+        val elevatorActor = system.actorOf(Elevator.props(id, s"elevator_$id"), s"elevator_$id")
+        elevatorActor ! ElevatorPanelProtocol.PickUp
+      }
     }
   }
 }

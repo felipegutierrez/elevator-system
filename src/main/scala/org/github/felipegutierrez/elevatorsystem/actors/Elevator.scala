@@ -48,9 +48,10 @@ case class Elevator(actorId: Int, actorName: String) extends Actor with ActorLog
     case msg@ElevatorProtocol.RequestElevatorState(elevatorId) =>
       println(s"[Elevator $actorId] RequestElevatorState received")
       sender() ! BuildingCoordinatorProtocol.ElevatorState(elevatorId, currentFloor, targetFloor, direction)
-    case message =>
-      println(s"[Elevator $actorId] msg $message stashed because the elevator is stopped!")
+    case msg@ElevatorProtocol.MakeMove(elevatorId, newTargetFloor) =>
+      println(s"[Elevator $actorId] $msg stashed because the elevator is stopped!")
       stash()
+    case message => log.warning(s"[Elevator $actorId] unknown message: $message")
   }
 
   /**
@@ -74,8 +75,9 @@ case class Elevator(actorId: Int, actorName: String) extends Actor with ActorLog
 
       unstashAll() // unstash the messages and change the handler
       context.become(stopped(newTargetFloor, newTargetFloor, 0))
-    case message =>
-      println(s"[Elevator $actorId] msg $message stashed because the elevator is moving!")
+    case msg@(ElevatorProtocol.MoveRequest(_, _) | ElevatorProtocol.RequestElevatorState(_)) =>
+      println(s"[Elevator $actorId] $msg stashed because the elevator is moving!")
       stash()
+    case message => log.warning(s"[Elevator $actorId] unknown message: $message")
   }
 }

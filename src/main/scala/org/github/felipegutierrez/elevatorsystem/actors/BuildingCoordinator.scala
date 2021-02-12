@@ -9,8 +9,8 @@ import org.github.felipegutierrez.elevatorsystem.actors.util.BuildingUtil
 import org.github.felipegutierrez.elevatorsystem.services._
 
 import scala.collection.immutable.Queue
+import scala.concurrent.Await
 import scala.concurrent.duration._
-import scala.concurrent.{Await, ExecutionContext}
 
 object BuildingCoordinator {
   def props(actorName: String = "buildingCoordinatorActor",
@@ -51,8 +51,6 @@ case class BuildingCoordinator(actorName: String,
                                numberOfElevators: Int,
                                elevatorControlSystem: ElevatorControlSystem)
   extends Actor with ActorLogging {
-
-  // implicit val executionContext: ExecutionContext = context.system.dispatchers.lookup("building-coordinator-dispatcher")
 
   implicit val timeout = Timeout(10 seconds)
 
@@ -144,7 +142,8 @@ case class BuildingCoordinator(actorName: String,
       // passenger already in the elevator, just need to tell the elevator to move
       self ! BuildingCoordinatorProtocol.MoveElevator(elevatorId, direction)
 
-    case message => println(s"[BuildingCoordinator] unknown message: $message")
+    case message => log.warning(s"[BuildingCoordinator] unknown message: $message")
+      // println(s"[BuildingCoordinator] unknown message: $message")
   }
 
   /**
