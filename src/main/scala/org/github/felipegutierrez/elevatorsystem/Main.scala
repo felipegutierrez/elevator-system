@@ -91,7 +91,11 @@ object Main {
     val panelActor = system.actorOf(Props[Panel], "panelActor")
     val buildingCoordinatorActorName = "buildingCoordinatorActor"
     val buildingCoordinatorActor = system.actorOf(
-      BuildingCoordinator.props(buildingCoordinatorActorName, numberOfFloors, numberOfElevators, elevatorControlSystemType),
+      BuildingCoordinator.props(
+        buildingCoordinatorActorName,
+        numberOfFloors,
+        numberOfElevators,
+        elevatorControlSystemType).withDispatcher("building-coordinator-dispatcher"),
       buildingCoordinatorActorName)
 
     if (numberOfRandomPickUps <= 0) {
