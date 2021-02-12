@@ -20,24 +20,24 @@ import org.github.felipegutierrez.elevatorsystem.services.ElevatorControlSystem
  */
 object Main {
   def main(args: Array[String]): Unit = {
-    println(s"\nThis is a control system for elevators")
-    println(s"To help you we have some pre-built simulations")
-    println(s"")
-    println(s"Options using the first-come-first-serve logic for pickUp requests: ")
-    println(s"1 - Building with 10 floors and 1 elevator and 4 pickUp requests: PickUp(4, +1), PickUp(1, +1), PickUp(10, -1), PickUp(7, -1)")
-    println(s"2 - Building with 10 floors and 2 elevators and 4 pickUp requests: PickUp(4, +1), PickUp(1, +1), PickUp(10, -1), PickUp(7, -1)")
-    println(s"3 - Building with 100 floors and 1 elevator and 40 random pickUp requests")
-    println(s"4 - Building with 100 floors and 10 elevators and 40 random pickUp requests")
-    println(s"")
-    println(s"Options using the SCAN logic for pickUp requests: ")
-    println(s"5 - Building with 10 floors and 1 elevator and 4 pickUp requests: PickUp(4, +1), PickUp(1, +1), PickUp(10, -1), PickUp(7, -1)")
-    println(s"6 - Building with 10 floors and 2 elevators and 4 pickUp requests: PickUp(4, +1), PickUp(1, +1), PickUp(10, -1), PickUp(7, -1)")
-    println(s"7 - Building with 100 floors and 1 elevator and 40 random pickUp requests")
-    println(s"8 - Building with 100 floors and 10 elevators and 40 random pickUp requests")
-    println(s"")
-    println(s"9 - Interactive start configuration")
-    println(s"")
-    print(s"Choose your option: ")
+    println("\nThis is a control system for elevators")
+    println("To help you we have some pre-built simulations")
+    println("")
+    println("Options using the first-come-first-serve logic for pickUp requests: ")
+    println("1 - Building with 10 floors and 1 elevator and 4 pickUp requests: PickUp(4, +1), PickUp(1, +1), PickUp(10, -1), PickUp(7, -1)")
+    println("2 - Building with 10 floors and 2 elevators and 4 pickUp requests: PickUp(4, +1), PickUp(1, +1), PickUp(10, -1), PickUp(7, -1)")
+    println("3 - Building with 100 floors and 1 elevator and 40 random pickUp requests")
+    println("4 - Building with 100 floors and 10 elevators and 40 random pickUp requests")
+    println("")
+    println("Options using the SCAN logic for pickUp requests: ")
+    println("5 - Building with 10 floors and 1 elevator and 4 pickUp requests: PickUp(4, +1), PickUp(1, +1), PickUp(10, -1), PickUp(7, -1)")
+    println("6 - Building with 10 floors and 2 elevators and 4 pickUp requests: PickUp(4, +1), PickUp(1, +1), PickUp(10, -1), PickUp(7, -1)")
+    println("7 - Building with 100 floors and 1 elevator and 40 random pickUp requests")
+    println("8 - Building with 100 floors and 10 elevators and 40 random pickUp requests")
+    println("")
+    println("9 - Interactive start configuration")
+    println("")
+    print("Choose your option: ")
 
     val option = scala.io.StdIn.readLine()
     option match {
@@ -83,7 +83,7 @@ object Main {
           else throw new RuntimeException("wrong elevator controller system")
         }
         run(numberOfFloors, numberOfElevators, elevatorControlSystem, randomPickUps)
-      case _ => println(s"unavailable option")
+      case _ => println("unavailable option")
     }
   }
 
