@@ -26,8 +26,8 @@ class Panel extends Actor with ActorLogging {
       val msg = BuildingCoordinatorProtocol.PickUpRequest(pickUpFloor, direction)
       println(s"[Panel] received a PickUp from floor [$pickUpFloor] to go [$direction], sending $msg to the building coordinator")
       buildingActor ! msg
-    case ElevatorPanelProtocol.PickUpRequestSuccess() => println(s"[Panel] PickUpRequest was requested")
-    case ElevatorPanelProtocol.PickUpRequestFailure() => println(s"[Panel] PickUpRequest failed")
+    case ElevatorPanelProtocol.PickUpRequestSuccess() => println("[Panel] PickUpRequest was requested")
+    case ElevatorPanelProtocol.PickUpRequestFailure() => println("[Panel] PickUpRequest failed")
     case message => log.warning(s"[Panel] unknown message: $message")
   }
 }

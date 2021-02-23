@@ -18,7 +18,7 @@ class PanelSpec
 
   "the Panel actor" should {
     "receive messages that belong to its protocol" in {
-      EventFilter.warning(pattern = s"[Panel] unknown message: [a-z]", occurrences = 0) intercept {
+      EventFilter.warning(pattern = "[Panel] unknown message: [a-z]", occurrences = 0) intercept {
         val panelActor = system.actorOf(Props[Panel], "panelActorSpec")
         val buildingActor = system.actorOf(BuildingCoordinator.props("building", 10, 2), "building")
         panelActor ! ElevatorPanelProtocol.PickUp(4, +1, buildingActor)

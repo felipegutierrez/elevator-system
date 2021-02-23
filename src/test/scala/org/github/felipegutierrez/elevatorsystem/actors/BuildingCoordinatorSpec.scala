@@ -122,7 +122,7 @@ class BuildingCoordinatorSpec extends TestKit(ActorSystem("BuildingCoordinatorSp
 
   "the BuildingCoordinator actor" should {
     "only receive messages that belong to its protocol" in {
-      EventFilter.warning(pattern = s"[BuildingCoordinator] unknown message: [a-z]", occurrences = 0) intercept {
+      EventFilter.warning(pattern = "[BuildingCoordinator] unknown message: [a-z]", occurrences = 0) intercept {
         val buildingActor = system.actorOf(BuildingCoordinator.props("building", 10, 2), "building")
         buildingActor ! BuildingCoordinatorProtocol.PickUpRequest(+4, +1)
         buildingActor ! BuildingCoordinatorProtocol.MoveElevator(1, +1)

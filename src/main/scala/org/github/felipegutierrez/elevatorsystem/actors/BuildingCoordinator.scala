@@ -4,9 +4,11 @@ import akka.actor.{Actor, ActorLogging, ActorRef, ActorSelection, Props}
 import akka.pattern.ask
 import akka.util.Timeout
 import org.github.felipegutierrez.elevatorsystem.actors.exceptions.BuildingCoordinatorException
-import org.github.felipegutierrez.elevatorsystem.actors.protocol.{BuildingCoordinatorProtocol, ElevatorPanelProtocol, ElevatorProtocol}
+import org.github.felipegutierrez.elevatorsystem.actors.protocol.BuildingCoordinatorProtocol._
+import org.github.felipegutierrez.elevatorsystem.actors.protocol.ElevatorPanelProtocol.PickUpRequestSuccess
+import org.github.felipegutierrez.elevatorsystem.actors.protocol.ElevatorProtocol.{MakeMove, MoveRequest, RequestElevatorState}
 import org.github.felipegutierrez.elevatorsystem.actors.util.BuildingUtil
-import org.github.felipegutierrez.elevatorsystem.services._
+import org.github.felipegutierrez.elevatorsystem.services.{ElevatorControlSystem, ElevatorControlSystemFCFS, ElevatorControlSystemScan}
 
 import scala.collection.immutable.Queue
 import scala.concurrent.Await
@@ -56,11 +58,38 @@ case class BuildingCoordinator(actorName: String,
 
   val elevators = createElevators(numberOfElevators)
 
+  /**
+   * The default handler of the Building coordinator starts with the [[operational]] handler with empty lists of the stopsRequests and pickUpRequests.
+   * New stopsRequests and pickUpRequests are added in a stateless manner using immutable state.
+   *
+   * @return
+   */
   override def receive: Receive = operational(Map[Int, Queue[Int]](), Map[Int, Queue[Int]]())
 
+  /**
+   * The handler that manages the stateless behavior of the Building Coordinator.
+   * Every time that the [[Panel]] actor sends a [[PickUpRequest]] message the Building Coordinator handles these messages in a non-blocking manner.
+   * Therefore, it simulates that anyone at any floor can request a pickUp.
+   * The elevator will arrive at any time in the future, but the pickUp request is always non-blocking.
+   *
+   * So, the Building coordinator actor sends a [[MoveElevator]] message to self asking some elevator to move.
+   * The process within this message is essentially blocking because we cannot change the behavior of an elevator if it is moving.
+   * In order to make an [[Elevator]] move the [[BuildingCoordinator]] actor has to send a sequence of messages:
+   * [[RequestElevatorState]] -> find next stop -> [[MoveRequest]] -> [[MakeMove]] then the [[Elevator]] arrives on the floor.
+   * If the [[PickUpRequest]] was made, the passenger enters in the Elevator and he/she may send a [[DropOffRequest]] that is generated randomly and it is send in a non-blocking manner to the [[Elevator]].
+   * Thereby, a passenger inside an elevator may request the elevator to go to any floor.
+   * Its request is attended not in the exactly time that it is issued, but according to the controller that the Building Coordinator is using.
+   *
+   * When the Building Coordinator receives the [[RequestElevatorState]] message it must find the next floor to send the elevator.
+   * This has to be done before to send the [[MoveRequest]] message.
+   * This operation is done by the [[ElevatorControlSystem]] used by the Building Coordinator.
+   *
+   * @param stopsRequests  a Map that contains the stops that one elevator must attend.
+   * @param pickUpRequests a Map that contains the pickUps issued from the [[Panel]] actor.
+   * @return
+   */
   def operational(stopsRequests: Map[Int, Queue[Int]], pickUpRequests: Map[Int, Queue[Int]]): Receive = {
-
-    case request@BuildingCoordinatorProtocol.PickUpRequest(pickUpFloor, direction) =>
+    case request@PickUpRequest(pickUpFloor, direction) =>
       println(s"[BuildingCoordinator] received a $request from floor[$pickUpFloor] to go [$direction] and will find an elevator to send.")
 
       if (pickUpFloor > numberOfFloors || pickUpFloor < 0) throw new BuildingCoordinatorException(s"I cannot pick up you because the floor $pickUpFloor does not exist in this building")
@@ -87,26 +116,26 @@ case class BuildingCoordinator(actorName: String,
 
       context.become(operational(newStopsRequests, newPickUpRequests))
 
-      sender() ! ElevatorPanelProtocol.PickUpRequestSuccess()
+      sender() ! PickUpRequestSuccess()
 
-      self ! BuildingCoordinatorProtocol.MoveElevator(elevatorId, direction)
+      self ! MoveElevator(elevatorId, direction)
 
-    case msg@BuildingCoordinatorProtocol.MoveElevator(elevatorId, direction) =>
+    case msg@MoveElevator(elevatorId, direction) =>
       println(s"[BuildingCoordinator] received $msg")
       // it is possible to have duplicate requests to the same floor and we don't have to call the elevator more than once
       if (stopsRequests.get(elevatorId).nonEmpty) {
         val elevatorActor: ActorSelection = context.actorSelection(s"/user/$actorName/elevator_$elevatorId")
 
-        val stateFuture = elevatorActor ? ElevatorProtocol.RequestElevatorState(elevatorId)
-        val elevatorState = Await.result(stateFuture, Duration.Inf).asInstanceOf[BuildingCoordinatorProtocol.ElevatorState]
+        val stateFuture = elevatorActor ? RequestElevatorState(elevatorId)
+        val elevatorState = Await.result(stateFuture, Duration.Inf).asInstanceOf[ElevatorState]
 
         val nextStop = elevatorControlSystem.findNextStop(stopsRequests.get(elevatorId).getOrElse(Queue[Int]()), elevatorState.currentFloor, elevatorState.direction)
         if (nextStop != -1) { // check if the queue is empty
-          val nextStopFuture = elevatorActor ? ElevatorProtocol.MoveRequest(elevatorId, nextStop)
-          val moveRequestSuccess = Await.result(nextStopFuture, Duration.Inf).asInstanceOf[BuildingCoordinatorProtocol.MoveRequestSuccess]
+          val nextStopFuture = elevatorActor ? MoveRequest(elevatorId, nextStop)
+          val moveRequestSuccess = Await.result(nextStopFuture, Duration.Inf).asInstanceOf[MoveRequestSuccess]
 
-          val makeMoveFuture = elevatorActor ? ElevatorProtocol.MakeMove(elevatorId, moveRequestSuccess.targetFloor)
-          val makeMoveSuccess = Await.result(makeMoveFuture, Duration.Inf).asInstanceOf[BuildingCoordinatorProtocol.MakeMoveSuccess]
+          val makeMoveFuture = elevatorActor ? MakeMove(elevatorId, moveRequestSuccess.targetFloor)
+          val makeMoveSuccess = Await.result(makeMoveFuture, Duration.Inf).asInstanceOf[MakeMoveSuccess]
 
           println(s"[BuildingCoordinator] Elevator ${makeMoveSuccess.elevatorId} arrived at floor [${makeMoveSuccess.floor}]")
           val stopsRequestsElevator = stopsRequests.get(elevatorId).getOrElse(Queue[Int]())
@@ -117,7 +146,7 @@ case class BuildingCoordinator(actorName: String,
           val newPickUpRequestsElevator = {
             if (pickUpRequestsElevator.contains(makeMoveSuccess.floor)) {
               val dropOffFloor = BuildingUtil.generateRandomFloor(numberOfFloors, makeMoveSuccess.floor, direction)
-              context.self ! BuildingCoordinatorProtocol.DropOffRequest(makeMoveSuccess.elevatorId, dropOffFloor, direction)
+              context.self ! DropOffRequest(makeMoveSuccess.elevatorId, dropOffFloor, direction)
 
               pickUpRequestsElevator.filterNot(_ == makeMoveSuccess.floor)
             } else {
@@ -129,7 +158,7 @@ case class BuildingCoordinator(actorName: String,
         }
       }
 
-    case msg@BuildingCoordinatorProtocol.DropOffRequest(elevatorId, dropOffFloor, direction) =>
+    case msg@DropOffRequest(elevatorId, dropOffFloor, direction) =>
       println(s"[BuildingCoordinator] A passenger on [Elevator $elevatorId] requested $msg")
       val stopsRequestsElevator = stopsRequests.get(elevatorId).getOrElse(Queue[Int]())
       val newStopsRequestsElevator = {
@@ -140,10 +169,9 @@ case class BuildingCoordinator(actorName: String,
       context.become(operational(newStopsRequests, pickUpRequests))
 
       // passenger already in the elevator, just need to tell the elevator to move
-      self ! BuildingCoordinatorProtocol.MoveElevator(elevatorId, direction)
+      self ! MoveElevator(elevatorId, direction)
 
     case message => log.warning(s"[BuildingCoordinator] unknown message: $message")
-      // println(s"[BuildingCoordinator] unknown message: $message")
   }
 
   /**

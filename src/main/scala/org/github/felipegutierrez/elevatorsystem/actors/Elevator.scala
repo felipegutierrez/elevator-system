@@ -48,7 +48,7 @@ case class Elevator(actorId: Int, actorName: String) extends Actor with ActorLog
     case msg@ElevatorProtocol.RequestElevatorState(elevatorId) =>
       println(s"[Elevator $actorId] RequestElevatorState received")
       sender() ! BuildingCoordinatorProtocol.ElevatorState(elevatorId, currentFloor, targetFloor, direction)
-    case msg@ElevatorProtocol.MakeMove(elevatorId, newTargetFloor) =>
+    case msg@ElevatorProtocol.MakeMove(_, _) =>
       println(s"[Elevator $actorId] $msg stashed because the elevator is stopped!")
       stash()
     case message => log.warning(s"[Elevator $actorId] unknown message: $message")
