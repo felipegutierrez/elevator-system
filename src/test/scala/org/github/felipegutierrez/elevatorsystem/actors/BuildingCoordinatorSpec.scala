@@ -43,32 +43,22 @@ class BuildingCoordinatorSpec
 
   "the Building actor with more than 16 elevators" should {
     "not be allowed" in {
-      val numberOfFloors: Int = 10
-      val numberOfElevators: Int = 17
-      val actorName = "buildingActorSpec2"
-      try {
-        val buildingActor = system.actorOf(BuildingCoordinator.props(actorName, numberOfFloors, numberOfElevators), actorName)
-      } catch {
-        case BuildingCoordinatorException(msg) =>
-          println(s"I got exception $msg")
-          assert(true)
-        case _: Throwable => fail("we should get an exception here")
+      assertThrows[BuildingCoordinatorException] {
+        val numberOfFloors: Int = 10
+        val numberOfElevators: Int = 17
+        val actorName = "buildingActorSpec2"
+        system.actorOf(BuildingCoordinator.props(actorName, numberOfFloors, numberOfElevators), actorName)
       }
     }
   }
 
   "the Building must not be a house, so it" should {
     "have 2 or more floors" in {
-      val numberOfFloors: Int = 1
-      val numberOfElevators: Int = 17
-      try {
+      assertThrows[BuildingCoordinatorException] {
+        val numberOfFloors: Int = 1
+        val numberOfElevators: Int = 17
         val actorName = "buildingActorSpec3"
-        val buildingActor = system.actorOf(BuildingCoordinator.props(actorName, numberOfFloors, numberOfElevators), actorName)
-      } catch {
-        case BuildingCoordinatorException(msg) =>
-          println(s"I got exception $msg")
-          assert(true)
-        case _: Throwable => fail("we should get an exception here")
+        system.actorOf(BuildingCoordinator.props(actorName, numberOfFloors, numberOfElevators), actorName)
       }
     }
   }
