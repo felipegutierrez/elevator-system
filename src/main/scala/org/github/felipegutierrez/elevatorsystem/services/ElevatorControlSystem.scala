@@ -29,14 +29,5 @@ object ElevatorControlSystem {
  * @param numberOfElevators
  */
 abstract class ElevatorControlSystem(val numberOfFloors: Int, val numberOfElevators: Int) {
-
-  var lastElevator = 0
-
-  def nextElevatorUsingRoundRobin(): Int = {
-    lastElevator += 1
-    if (lastElevator > numberOfElevators) lastElevator = 1
-    lastElevator
-  }
-
   def findNextStop(stopsRequested: Queue[Int], currentFloor: Int, direction: Int): Int
 }

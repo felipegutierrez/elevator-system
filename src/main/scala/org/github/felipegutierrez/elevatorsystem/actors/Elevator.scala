@@ -2,7 +2,8 @@ package org.github.felipegutierrez.elevatorsystem.actors
 
 import akka.actor.{Actor, ActorLogging, Props, Stash}
 import akka.util.Timeout
-import org.github.felipegutierrez.elevatorsystem.actors.protocol.{BuildingCoordinatorProtocol, ElevatorProtocol}
+import org.github.felipegutierrez.elevatorsystem.actors.protocol.BuildingCoordinatorProtocol
+import org.github.felipegutierrez.elevatorsystem.actors.protocol.ElevatorProtocol.{MakeMove, MoveRequest, RequestElevatorState}
 
 import scala.concurrent.ExecutionContext
 import scala.concurrent.duration._
@@ -34,7 +35,7 @@ case class Elevator(actorId: Int, actorName: String) extends Actor with ActorLog
    * @return
    */
   def stopped(currentFloor: Int, targetFloor: Int, direction: Int): Receive = {
-    case request@ElevatorProtocol.MoveRequest(elevatorId, newTargetFloor) =>
+    case request@MoveRequest(elevatorId, newTargetFloor) =>
       println(s"[Elevator $actorId] $request received to floor $newTargetFloor")
 
       val newDirection = if (currentFloor < newTargetFloor) +1
@@ -45,10 +46,10 @@ case class Elevator(actorId: Int, actorName: String) extends Actor with ActorLog
 
       unstashAll() // unstash the messages and change the handler
       context.become(moving(currentFloor, newTargetFloor, newDirection))
-    case msg@ElevatorProtocol.RequestElevatorState(elevatorId) =>
+    case msg@RequestElevatorState(elevatorId) =>
       println(s"[Elevator $actorId] RequestElevatorState received")
       sender() ! BuildingCoordinatorProtocol.ElevatorState(elevatorId, currentFloor, targetFloor, direction)
-    case msg@ElevatorProtocol.MakeMove(_, _) =>
+    case msg@MakeMove(_, _) =>
       println(s"[Elevator $actorId] $msg stashed because the elevator is stopped!")
       stash()
     case message => log.warning(s"[Elevator $actorId] unknown message: $message")
@@ -60,7 +61,7 @@ case class Elevator(actorId: Int, actorName: String) extends Actor with ActorLog
    * @return
    */
   def moving(currentFloor: Int, targetFloor: Int, direction: Int): Receive = {
-    case msg@ElevatorProtocol.MakeMove(elevatorId, newTargetFloor) =>
+    case msg@MakeMove(elevatorId, newTargetFloor) =>
       // println(s"[Elevator $actorId] $msg received")
       val milliseconds =
         if (currentFloor < newTargetFloor) (newTargetFloor - currentFloor) * 10
@@ -75,7 +76,7 @@ case class Elevator(actorId: Int, actorName: String) extends Actor with ActorLog
 
       unstashAll() // unstash the messages and change the handler
       context.become(stopped(newTargetFloor, newTargetFloor, 0))
-    case msg@(ElevatorProtocol.MoveRequest(_, _) | ElevatorProtocol.RequestElevatorState(_)) =>
+    case msg@(MoveRequest(_, _) | RequestElevatorState(_)) =>
       println(s"[Elevator $actorId] $msg stashed because the elevator is moving!")
       stash()
     case message => log.warning(s"[Elevator $actorId] unknown message: $message")

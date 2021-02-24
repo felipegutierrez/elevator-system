@@ -20,7 +20,7 @@ libraryDependencies ++= Seq(
   "org.scalatest" %% "scalatest" % scalaTestVersion,
 
   // Log
-  "com.typesafe.akka" %% "akka-slf4j" % akkaVersion,
-  "ch.qos.logback" % "logback-classic" % logbackVersion,
-  "com.typesafe.scala-logging" %% "scala-logging" % scalaLoggingVersion,
+  // "com.typesafe.akka" %% "akka-slf4j" % akkaVersion,
+  // "ch.qos.logback" % "logback-classic" % logbackVersion,
+  // "com.typesafe.scala-logging" %% "scala-logging" % scalaLoggingVersion,
 )

@@ -5,14 +5,14 @@ import akka.testkit.{EventFilter, ImplicitSender, TestKit}
 import org.github.felipegutierrez.elevatorsystem.actors.exceptions.BuildingCoordinatorException
 import org.github.felipegutierrez.elevatorsystem.actors.protocol._
 import org.scalatest.BeforeAndAfterAll
-import org.scalatest.matchers.should.Matchers
 import org.scalatest.wordspec.AnyWordSpecLike
 
-class BuildingCoordinatorSpec extends TestKit(ActorSystem("BuildingCoordinatorSpec"))
-  with ImplicitSender
-  with AnyWordSpecLike
-  with Matchers
-  with BeforeAndAfterAll {
+class BuildingCoordinatorSpec
+  extends TestKit(ActorSystem("BuildingCoordinatorSpec"))
+    with ImplicitSender
+    with AnyWordSpecLike
+    // with Matchers
+    with BeforeAndAfterAll {
 
   override def afterAll(): Unit = {
     TestKit.shutdownActorSystem(system)

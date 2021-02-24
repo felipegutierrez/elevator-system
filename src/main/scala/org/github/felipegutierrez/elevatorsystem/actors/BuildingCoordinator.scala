@@ -64,31 +64,30 @@ case class BuildingCoordinator(actorName: String,
    *
    * @return
    */
-  override def receive: Receive = operational(Map[Int, Queue[Int]](), Map[Int, Queue[Int]]())
+  override def receive: Receive = operational(1, Map[Int, Queue[Int]](), Map[Int, Queue[Int]]())
 
   /**
    * The handler that manages the stateless behavior of the Building Coordinator.
    * Every time that the [[Panel]] actor sends a [[PickUpRequest]] message the Building Coordinator handles these messages in a non-blocking manner.
    * Therefore, it simulates that anyone at any floor can request a pickUp.
    * The elevator will arrive at any time in the future, but the pickUp request is always non-blocking.
+   * So, the Building coordinator actor sends a [[MoveElevator]] message with the [[currentElevatorId]] to self asking some elevator to move.
+   * The actor changes its handler to receive [[PickUpRequest]] messages with a [[nextElevatorId]].
+   * The [[nextElevatorId]] is computed using round-robin approach.
    *
-   * So, the Building coordinator actor sends a [[MoveElevator]] message to self asking some elevator to move.
-   * The process within this message is essentially blocking because we cannot change the behavior of an elevator if it is moving.
+   * The process within the [[MoveElevator]] message is essentially blocking because we cannot change the behavior of an elevator if it is moving.
    * In order to make an [[Elevator]] move the [[BuildingCoordinator]] actor has to send a sequence of messages:
-   * [[RequestElevatorState]] -> find next stop -> [[MoveRequest]] -> [[MakeMove]] then the [[Elevator]] arrives on the floor.
+   * [[RequestElevatorState]] -> [[MoveRequest]] -> [[MakeMove]] then the [[Elevator]] arrives on the floor.
    * If the [[PickUpRequest]] was made, the passenger enters in the Elevator and he/she may send a [[DropOffRequest]] that is generated randomly and it is send in a non-blocking manner to the [[Elevator]].
    * Thereby, a passenger inside an elevator may request the elevator to go to any floor.
    * Its request is attended not in the exactly time that it is issued, but according to the controller that the Building Coordinator is using.
    *
-   * When the Building Coordinator receives the [[RequestElevatorState]] message it must find the next floor to send the elevator.
-   * This has to be done before to send the [[MoveRequest]] message.
-   * This operation is done by the [[ElevatorControlSystem]] used by the Building Coordinator.
    *
    * @param stopsRequests  a Map that contains the stops that one elevator must attend.
    * @param pickUpRequests a Map that contains the pickUps issued from the [[Panel]] actor.
    * @return
    */
-  def operational(stopsRequests: Map[Int, Queue[Int]], pickUpRequests: Map[Int, Queue[Int]]): Receive = {
+  def operational(currentElevatorId: Int,stopsRequests: Map[Int, Queue[Int]], pickUpRequests: Map[Int, Queue[Int]]): Receive = {
     case request@PickUpRequest(pickUpFloor, direction) =>
       println(s"[BuildingCoordinator] received a $request from floor[$pickUpFloor] to go [$direction] and will find an elevator to send.")
 
@@ -97,28 +96,29 @@ case class BuildingCoordinator(actorName: String,
       if (pickUpFloor == 0 && direction == -1) throw new BuildingCoordinatorException("you cannot go down because you are on the ground floor.")
       if (pickUpFloor == numberOfFloors && direction == +1) throw new BuildingCoordinatorException("you cannot go up because you are on the last floor.")
 
-      val elevatorId = elevatorControlSystem.nextElevatorUsingRoundRobin()
-
       // change the Elevators state and calling context.become
-      val stopsRequestsElevator = stopsRequests.get(elevatorId).getOrElse(Queue[Int]())
+      val stopsRequestsElevator = stopsRequests.get(currentElevatorId).getOrElse(Queue[Int]())
       val newStopsRequestsElevator = {
         if (!stopsRequestsElevator.contains(pickUpFloor)) stopsRequestsElevator.enqueue(pickUpFloor)
         else stopsRequestsElevator
       }
-      val newStopsRequests = stopsRequests + (elevatorId -> newStopsRequestsElevator)
+      val newStopsRequests = stopsRequests + (currentElevatorId -> newStopsRequestsElevator)
 
-      val pickUpRequestsElevator = pickUpRequests.get(elevatorId).getOrElse(Queue[Int]())
+      val pickUpRequestsElevator = pickUpRequests.get(currentElevatorId).getOrElse(Queue[Int]())
       val newPickUpRequestsElevator = {
         if (!pickUpRequestsElevator.contains(pickUpFloor)) pickUpRequestsElevator.enqueue(pickUpFloor)
         else pickUpRequestsElevator
       }
-      val newPickUpRequests = pickUpRequests + (elevatorId -> newPickUpRequestsElevator)
+      val newPickUpRequests = pickUpRequests + (currentElevatorId -> newPickUpRequestsElevator)
 
-      context.become(operational(newStopsRequests, newPickUpRequests))
+      // the next elevator Id is get in a round robin fashion
+      val nextElevatorId = if (currentElevatorId + 1 > numberOfElevators) 1 else currentElevatorId + 1
+      context.become(operational(nextElevatorId, newStopsRequests, newPickUpRequests))
 
       sender() ! PickUpRequestSuccess()
 
-      self ! MoveElevator(elevatorId, direction)
+      // the building coordinator moves the current elevator
+      self ! MoveElevator(currentElevatorId, direction)
 
     case msg@MoveElevator(elevatorId, direction) =>
       println(s"[BuildingCoordinator] received $msg")
@@ -154,7 +154,7 @@ case class BuildingCoordinator(actorName: String,
             }
           }
           val newPickUpRequests = pickUpRequests + (elevatorId -> newPickUpRequestsElevator)
-          context.become(operational(newStopsRequests, newPickUpRequests))
+          context.become(operational(currentElevatorId, newStopsRequests, newPickUpRequests))
         }
       }
 
@@ -166,7 +166,7 @@ case class BuildingCoordinator(actorName: String,
         else stopsRequestsElevator
       }
       val newStopsRequests = stopsRequests + (elevatorId -> newStopsRequestsElevator)
-      context.become(operational(newStopsRequests, pickUpRequests))
+      context.become(operational(currentElevatorId, newStopsRequests, pickUpRequests))
 
       // passenger already in the elevator, just need to tell the elevator to move
       self ! MoveElevator(elevatorId, direction)
