@@ -31,9 +31,6 @@ class ElevatorControlSystemScan(numberOfFloors: Int, numberOfElevators: Int)
           case "right" => right += stop
           case "wrong" => throw ElevatorControlSystemException("Error on the Elevator control system SCAN algorithm.")
         }
-        // ElevatorControlSystemException
-        // if (stop < currentFloor) left += stop
-        // else if (stop > currentFloor) right += stop
       }
       left = left.sorted
       right = right.sorted
