@@ -1,5 +1,6 @@
 package org.github.felipegutierrez.elevatorsystem.services
 
+import org.github.felipegutierrez.elevatorsystem.actors.exceptions.ElevatorControlSystemException
 import org.scalatest.flatspec.AnyFlatSpec
 
 import scala.collection.immutable.Queue
@@ -24,5 +25,15 @@ class ElevatorControlSystemFCFSSpec extends AnyFlatSpec {
 
     val nextStops01 = Queue()
     assertResult(-1)(control.findNextStop(nextStops01))
+  }
+
+  "the elevator control system with First-Come-First-Serve of a building with X floors" should
+    "not allow stop requests on non existing floors" in {
+    assertThrows[ElevatorControlSystemException] {
+      val control = new ElevatorControlSystemFCFS(10, 1)
+
+      val nextStops = Queue(176)
+      control.findNextStop(nextStops, 6, +1)
+    }
   }
 }

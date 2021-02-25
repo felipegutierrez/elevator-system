@@ -23,4 +23,44 @@ class BuildingUtilSpec extends AnyFlatSpec {
       BuildingUtil.generateRandomFloor(numberOfFloors, currentFloor, direction)
     }
   }
+
+  "the building util to generate random floors when going UP" should
+    "generate a floor higher than the current floor" in {
+    val numberOfFloors: Int = 10
+    val currentFloor: Int = 5
+    val direction: Int = +1
+    val generatedFloor = BuildingUtil.generateRandomFloor(numberOfFloors, currentFloor, direction)
+    assert(generatedFloor > currentFloor)
+    assert(generatedFloor <= numberOfFloors)
+  }
+
+  "the building util to generate random floors when going DOWN" should
+    "generate a floor lower than the current floor" in {
+    val numberOfFloors: Int = 10
+    val currentFloor: Int = 5
+    val direction: Int = -1
+    val generatedFloor = BuildingUtil.generateRandomFloor(numberOfFloors, currentFloor, direction)
+    assert(generatedFloor >= 0)
+    assert(generatedFloor < currentFloor)
+  }
+
+  "a skyscraper building util to generate random floors when going UP" should
+    "generate a floor higher than the current floor" in {
+    val numberOfFloors: Int = 100
+    val currentFloor: Int = 5
+    val direction: Int = +1
+    val generatedFloor = BuildingUtil.generateRandomFloor(numberOfFloors, currentFloor, direction)
+    assert(generatedFloor > currentFloor)
+    assert(generatedFloor <= numberOfFloors)
+  }
+
+  "a skyscraper building util to generate random floors when going DOWN" should
+    "generate a floor lower than the current floor" in {
+    val numberOfFloors: Int = 100
+    val currentFloor: Int = 95
+    val direction: Int = -1
+    val generatedFloor = BuildingUtil.generateRandomFloor(numberOfFloors, currentFloor, direction)
+    assert(generatedFloor >= 0)
+    assert(generatedFloor < currentFloor)
+  }
 }

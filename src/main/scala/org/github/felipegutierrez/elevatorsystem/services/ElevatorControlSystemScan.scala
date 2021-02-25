@@ -1,5 +1,7 @@
 package org.github.felipegutierrez.elevatorsystem.services
 
+import org.github.felipegutierrez.elevatorsystem.actors.exceptions.ElevatorControlSystemException
+
 import scala.collection.immutable.Queue
 import scala.collection.mutable.ListBuffer
 
@@ -21,8 +23,17 @@ class ElevatorControlSystemScan(numberOfFloors: Int, numberOfElevators: Int)
       var right = ListBuffer[Int]()
 
       stopsRequested.foreach { stop =>
-        if (stop < currentFloor) left += stop
-        else if (stop > currentFloor) right += stop
+        if (stop > numberOfFloors) throw ElevatorControlSystemException(s"it is not possible to stop at floor $stop because this building has only $numberOfFloors floors.")
+        val res = (if (stop < currentFloor) "left" else if (stop > currentFloor) "right" else "wrong")
+
+        res match {
+          case "left" => left += stop
+          case "right" => right += stop
+          case "wrong" => throw ElevatorControlSystemException("Error on the Elevator control system SCAN algorithm.")
+        }
+        // ElevatorControlSystemException
+        // if (stop < currentFloor) left += stop
+        // else if (stop > currentFloor) right += stop
       }
       left = left.sorted
       right = right.sorted

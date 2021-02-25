@@ -1,5 +1,7 @@
 package org.github.felipegutierrez.elevatorsystem.services
 
+import org.github.felipegutierrez.elevatorsystem.actors.exceptions.ElevatorControlSystemException
+
 import scala.collection.immutable.Queue
 
 /**
@@ -15,7 +17,8 @@ class ElevatorControlSystemFCFS(numberOfFloors: Int, numberOfElevators: Int)
 
   override def findNextStop(stopsRequested: Queue[Int], currentFloor: Int = 0, direction: Int = 1): Int = {
     // println(s"[ElevatorControlSystemFCFS] next stop from list: ${stopsRequested.map(x => s"$x , ").mkString}")
-    if (stopsRequested.isEmpty) -1
-    else stopsRequested.head
+    val nextStop = if (stopsRequested.isEmpty) -1 else stopsRequested.head
+    if (nextStop > numberOfFloors) throw ElevatorControlSystemException(s"it is not possible to stop at floor $nextStop because this building has only $numberOfFloors floors.")
+    nextStop
   }
 }
