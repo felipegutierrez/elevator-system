@@ -23,14 +23,20 @@ class ElevatorControlSystemScan(numberOfFloors: Int, numberOfElevators: Int)
       var right = ListBuffer[Int]()
 
       stopsRequested.foreach { stop =>
-        if (stop > numberOfFloors) throw ElevatorControlSystemException(s"it is not possible to stop at floor $stop because this building has only $numberOfFloors floors.")
-        val res = (if (stop < currentFloor) "left" else if (stop > currentFloor) "right" else "wrong")
 
-        res match {
-          case "left" => left += stop
-          case "right" => right += stop
-          case "wrong" => throw ElevatorControlSystemException("Error on the Elevator control system SCAN algorithm.")
+        stop match {
+          case stop if (stop > numberOfFloors) => throw ElevatorControlSystemException(s"it is not possible to stop at floor $stop because this building has only $numberOfFloors floors.")
+          case stop if (stop < currentFloor) => left += stop
+          case stop if (stop > currentFloor) => right += stop
+          case _ => throw ElevatorControlSystemException(s"ERROR: Control system SCAN algorithm. Stop $stop is the same floor of current floor $currentFloor")
         }
+        //        if (stop > numberOfFloors) throw ElevatorControlSystemException(s"it is not possible to stop at floor $stop because this building has only $numberOfFloors floors.")
+        //        val res = (if (stop < currentFloor) "left" else if (stop > currentFloor) "right" else "wrong")
+        //        res match {
+        //          case "left" => left += stop
+        //          case "right" => right += stop
+        //          case "wrong" => throw ElevatorControlSystemException("Error on the Elevator control system SCAN algorithm.")
+        //        }
       }
       left = left.sorted
       right = right.sorted
