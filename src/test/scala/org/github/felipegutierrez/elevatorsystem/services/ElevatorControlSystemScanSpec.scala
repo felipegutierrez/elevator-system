@@ -47,6 +47,7 @@ class ElevatorControlSystemScanSpec extends AnyFlatSpec {
 
     val nextStops = Queue(5)
     assertResult(-1)(control.findNextStop(nextStops, 6, +1))
+    assertResult(-1)(control.findNextStop(nextStops, 3, -1))
   }
 
   "the elevator control system with SCAN of a building with X floors" should
