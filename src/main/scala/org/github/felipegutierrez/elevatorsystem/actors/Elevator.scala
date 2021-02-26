@@ -38,9 +38,11 @@ case class Elevator(actorId: Int, actorName: String) extends Actor with ActorLog
     case request@MoveRequest(elevatorId, newTargetFloor) =>
       println(s"[Elevator $actorId] $request received to floor $newTargetFloor")
 
-      val newDirection = if (currentFloor < newTargetFloor) +1
-      else if (currentFloor > newTargetFloor) -1
-      else 0
+      val newDirection = currentFloor match {
+        case currentFloor if (currentFloor < newTargetFloor) => +1
+        case currentFloor if (currentFloor > newTargetFloor) => -1
+        case _ => 0
+      }
 
       sender() ! BuildingCoordinatorProtocol.MoveRequestSuccess(elevatorId, newTargetFloor)
 
@@ -63,10 +65,11 @@ case class Elevator(actorId: Int, actorName: String) extends Actor with ActorLog
   def moving(currentFloor: Int, targetFloor: Int, direction: Int): Receive = {
     case msg@MakeMove(elevatorId, newTargetFloor) =>
       // println(s"[Elevator $actorId] $msg received")
-      val milliseconds =
-        if (currentFloor < newTargetFloor) (newTargetFloor - currentFloor) * 10
-        else if (currentFloor > newTargetFloor) (currentFloor - newTargetFloor) * 10
-        else 0
+      val milliseconds = currentFloor match {
+        case currentFloor if (currentFloor < newTargetFloor) => (newTargetFloor - currentFloor) * 10
+        case currentFloor if (currentFloor > newTargetFloor) => (currentFloor - newTargetFloor) * 10
+        case _ => 0
+      }
 
       // we already change the handler so every message receives after this line will be stashed because the Elevator is moving
       println(s"[Elevator $actorId] moving from floor $currentFloor to floor $newTargetFloor in ${milliseconds} milliseconds ...\n")

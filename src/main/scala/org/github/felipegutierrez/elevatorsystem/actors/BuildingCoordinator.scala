@@ -23,13 +23,18 @@ object BuildingCoordinator {
     if (numberOfElevators < 0 || numberOfElevators > 16) throw new BuildingCoordinatorException("Number of elevators must be between 1 and 16")
     if (numberOfFloors < 2) throw new BuildingCoordinatorException("This is not a building. It is a house")
 
-    val elevatorControlSystem: ElevatorControlSystem = {
-      if (elevatorControlSystemType == ElevatorControlSystem.FCFSControlSystem)
-        new ElevatorControlSystemFCFS(numberOfFloors, numberOfElevators)
-      else if (elevatorControlSystemType == ElevatorControlSystem.ScanControlSystem)
-        new ElevatorControlSystemScan(numberOfFloors, numberOfElevators)
-      else
-        throw new RuntimeException("Elevator system type unimplemented")
+    //    val elevatorControlSystem: ElevatorControlSystem = {
+    //      if (elevatorControlSystemType == ElevatorControlSystem.FCFSControlSystem)
+    //        new ElevatorControlSystemFCFS(numberOfFloors, numberOfElevators)
+    //      else if (elevatorControlSystemType == ElevatorControlSystem.ScanControlSystem)
+    //        new ElevatorControlSystemScan(numberOfFloors, numberOfElevators)
+    //      else
+    //        throw new RuntimeException("Elevator system type unimplemented")
+    //    }
+    val elevatorControlSystem: ElevatorControlSystem = elevatorControlSystemType match {
+      case elevatorControlSystemType if (elevatorControlSystemType == ElevatorControlSystem.FCFSControlSystem) => new ElevatorControlSystemFCFS(numberOfFloors, numberOfElevators)
+      case elevatorControlSystemType if (elevatorControlSystemType == ElevatorControlSystem.ScanControlSystem) => new ElevatorControlSystemScan(numberOfFloors, numberOfElevators)
+      case _ => throw new RuntimeException("Elevator system type unimplemented")
     }
 
     Props(new BuildingCoordinator(actorName, numberOfFloors, numberOfElevators, elevatorControlSystem))
@@ -82,12 +87,11 @@ case class BuildingCoordinator(actorName: String,
    * Thereby, a passenger inside an elevator may request the elevator to go to any floor.
    * Its request is attended not in the exactly time that it is issued, but according to the controller that the Building Coordinator is using.
    *
-   *
    * @param stopsRequests  a Map that contains the stops that one elevator must attend.
    * @param pickUpRequests a Map that contains the pickUps issued from the [[Panel]] actor.
    * @return
    */
-  def operational(currentElevatorId: Int,stopsRequests: Map[Int, Queue[Int]], pickUpRequests: Map[Int, Queue[Int]]): Receive = {
+  def operational(currentElevatorId: Int, stopsRequests: Map[Int, Queue[Int]], pickUpRequests: Map[Int, Queue[Int]]): Receive = {
     case request@PickUpRequest(pickUpFloor, direction) =>
       println(s"[BuildingCoordinator] received a $request from floor[$pickUpFloor] to go [$direction] and will find an elevator to send.")
 

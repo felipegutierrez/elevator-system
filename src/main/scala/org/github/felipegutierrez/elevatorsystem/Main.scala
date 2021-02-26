@@ -21,22 +21,18 @@ import org.github.felipegutierrez.elevatorsystem.services.ElevatorControlSystem
 object Main {
   def main(args: Array[String]): Unit = {
     println("\nThis is a control system for elevators")
-    println("To help you we have some pre-built simulations")
-    println("")
+    println("To help you we have some pre-built simulations\n")
     println("Options using the first-come-first-serve logic for pickUp requests: ")
     println("1 - Building with 10 floors and 1 elevator and 4 pickUp requests: PickUp(4, +1), PickUp(1, +1), PickUp(10, -1), PickUp(7, -1)")
     println("2 - Building with 10 floors and 2 elevators and 4 pickUp requests: PickUp(4, +1), PickUp(1, +1), PickUp(10, -1), PickUp(7, -1)")
     println("3 - Building with 100 floors and 1 elevator and 40 random pickUp requests")
-    println("4 - Building with 100 floors and 10 elevators and 40 random pickUp requests")
-    println("")
+    println("4 - Building with 100 floors and 10 elevators and 40 random pickUp requests\n")
     println("Options using the SCAN logic for pickUp requests: ")
     println("5 - Building with 10 floors and 1 elevator and 4 pickUp requests: PickUp(4, +1), PickUp(1, +1), PickUp(10, -1), PickUp(7, -1)")
     println("6 - Building with 10 floors and 2 elevators and 4 pickUp requests: PickUp(4, +1), PickUp(1, +1), PickUp(10, -1), PickUp(7, -1)")
     println("7 - Building with 100 floors and 1 elevator and 40 random pickUp requests")
-    println("8 - Building with 100 floors and 10 elevators and 40 random pickUp requests")
-    println("")
-    println("9 - Interactive start configuration")
-    println("")
+    println("8 - Building with 100 floors and 10 elevators and 40 random pickUp requests\n")
+    println("9 - Interactive start configuration\n")
     print("Choose your option: ")
 
     val option = scala.io.StdIn.readLine()
@@ -77,10 +73,10 @@ object Main {
         val elevatorControl = scala.io.StdIn.readInt()
         print("Number of random pickups to generate: ")
         val randomPickUps = scala.io.StdIn.readInt()
-        val elevatorControlSystem = {
-          if (elevatorControl == 1) ElevatorControlSystem.FCFSControlSystem
-          else if (elevatorControl == 2) ElevatorControlSystem.ScanControlSystem
-          else throw new RuntimeException("wrong elevator controller system")
+        val elevatorControlSystem = elevatorControl match {
+          case elevatorControl if (elevatorControl == 1) => ElevatorControlSystem.FCFSControlSystem
+          case elevatorControl if (elevatorControl == 2) => ElevatorControlSystem.ScanControlSystem
+          case _ => throw new RuntimeException("Wrong elevator controller system. Please select 1 - [FCFS] or 2 - [SCAN].")
         }
         run(numberOfFloors, numberOfElevators, elevatorControlSystem, randomPickUps)
       case _ => println("unavailable option")
@@ -126,13 +122,20 @@ object Main {
       // random pick ups
       for (i <- 0 until numberOfRandomPickUps) {
         val randomFloor = BuildingUtil.generateRandomFloor(numberOfFloors, i, if (i % 2 == 0) 1 else -1)
-        val randomDirection = {
-          if (randomFloor < 5) +1
-          else if (randomFloor > numberOfFloors - 5) -1
-          else {
-            if (randomFloor % 2 == 0) 1 else -1
-          }
+        //        val randomDirection = {
+        //          if (randomFloor < 5) +1
+        //          else if (randomFloor > numberOfFloors - 5) -1
+        //          else {
+        //            if (randomFloor % 2 == 0) 1 else -1
+        //          }
+        //        }
+        val randomDirection = randomFloor match {
+          case randomFloor if (randomFloor < 5) => +1
+          case randomFloor if (randomFloor > numberOfFloors - 5) => -1
+          case randomFloor if (randomFloor % 2 == 0) => +1
+          case _ => -1
         }
+
         panelActor ! ElevatorPanelProtocol.PickUp(randomFloor, randomDirection, buildingCoordinatorActor)
       }
     }
