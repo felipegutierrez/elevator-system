@@ -125,9 +125,9 @@ case class BuildingCoordinator(actorName: String,
         val stateFuture = elevatorActor ? RequestElevatorState(elevatorId)
         val elevatorState = Await.result(stateFuture, Duration.Inf).asInstanceOf[ElevatorState]
 
-        val nextStop = elevatorControlSystem.findNextStop(stopsRequests.get(elevatorId).getOrElse(Queue[Floor]()), elevatorState.currentFloor, elevatorState.direction)
-        if (nextStop != -1) { // check if the queue is empty
-          val nextStopFuture = elevatorActor ? MoveRequest(elevatorId, nextStop)
+        val nextStop: Option[Floor] = elevatorControlSystem.findNextStop(stopsRequests.get(elevatorId).getOrElse(Queue[Floor]()), elevatorState.currentFloor, elevatorState.direction)
+        if (nextStop.isDefined) {
+          val nextStopFuture = elevatorActor ? MoveRequest(elevatorId, nextStop.get)
           val moveRequestSuccess = Await.result(nextStopFuture, Duration.Inf).asInstanceOf[MoveRequestSuccess]
 
           val makeMoveFuture = elevatorActor ? MakeMove(elevatorId, moveRequestSuccess.targetFloor)

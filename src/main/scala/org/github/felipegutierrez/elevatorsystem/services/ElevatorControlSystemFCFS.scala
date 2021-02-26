@@ -17,10 +17,10 @@ import scala.collection.immutable.Queue
 class ElevatorControlSystemFCFS(numberOfFloors: Int, numberOfElevators: Int)
   extends ElevatorControlSystem(numberOfFloors, numberOfElevators) {
 
-  override def findNextStop(stopsRequested: Queue[Floor], currentFloor: Floor = 0, direction: Direction = Direction(1)): Floor = {
+  override def findNextStop(stopsRequested: Queue[Floor], currentFloor: Floor = 0, direction: Direction = Direction(1)): Option[Floor] = {
     // println(s"[ElevatorControlSystemFCFS] next stop from list: ${stopsRequested.map(x => s"$x , ").mkString}")
-    val nextStop = if (stopsRequested.isEmpty) -1 else stopsRequested.head
-    if (nextStop > numberOfFloors) throw ElevatorControlSystemException(s"it is not possible to stop at floor $nextStop because this building has only $numberOfFloors floors.")
+    val nextStop: Option[Floor] = if (stopsRequested.isEmpty) None else Option[Floor](stopsRequested.head)
+    if (nextStop.getOrElse(0) > numberOfFloors) throw ElevatorControlSystemException(s"it is not possible to stop at floor $nextStop because this building has only $numberOfFloors floors.")
     nextStop
   }
 }

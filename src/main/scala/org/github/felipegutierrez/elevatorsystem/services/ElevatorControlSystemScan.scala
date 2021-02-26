@@ -18,8 +18,8 @@ import scala.collection.mutable.ListBuffer
 class ElevatorControlSystemScan(numberOfFloors: Int, numberOfElevators: Int)
   extends ElevatorControlSystem(numberOfFloors, numberOfElevators) {
 
-  override def findNextStop(stopsRequested: Queue[Floor], currentFloor: Floor, direction: Direction): Floor = {
-    if (stopsRequested.isEmpty) -1
+  override def findNextStop(stopsRequested: Queue[Floor], currentFloor: Floor, direction: Direction): Option[Floor] = {
+    if (stopsRequested.isEmpty) None
     else {
       var left = ListBuffer[Floor]()
       var right = ListBuffer[Floor]()
@@ -35,12 +35,12 @@ class ElevatorControlSystemScan(numberOfFloors: Int, numberOfElevators: Int)
       right = right.sorted
 
       if (direction == Direction(-1)) {
-        if (left.isEmpty) -1
-        else left.last
+        if (left.isEmpty) None
+        else Option[Floor](left.last)
       }
       else {
-        if (right.isEmpty) -1
-        else right.head
+        if (right.isEmpty) None
+        else Option[Floor](right.head)
       }
     }
   }

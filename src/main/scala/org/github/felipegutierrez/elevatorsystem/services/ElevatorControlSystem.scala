@@ -32,5 +32,5 @@ object ElevatorControlSystem {
  * @param numberOfElevators
  */
 abstract class ElevatorControlSystem(val numberOfFloors: Int, val numberOfElevators: Int) {
-  def findNextStop(stopsRequested: Queue[Floor], currentFloor: Floor, direction: Direction): Floor
+  def findNextStop(stopsRequested: Queue[Floor], currentFloor: Floor, direction: Direction): Option[Floor]
 }

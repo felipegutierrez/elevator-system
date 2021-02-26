@@ -13,11 +13,11 @@ class ElevatorControlSystemFCFSSpec extends AnyFlatSpec {
     val control = new ElevatorControlSystemFCFS(10, 1)
 
     val nextStops01 = Queue(2, 6, 8, 4)
-    assertResult(2)(control.findNextStop(nextStops01))
+    assertResult(Some(2))(control.findNextStop(nextStops01))
     val nextStops02 = nextStops01.enqueue(10)
-    assertResult(2)(control.findNextStop(nextStops02))
+    assertResult(Some(2))(control.findNextStop(nextStops02))
     val nextStops03 = nextStops01.dequeue._2
-    assertResult(6)(control.findNextStop(nextStops03))
+    assertResult(Some(6))(control.findNextStop(nextStops03))
   }
 
   "the elevator control system with First-Come-First-Serve logic with not requests" should
@@ -25,7 +25,7 @@ class ElevatorControlSystemFCFSSpec extends AnyFlatSpec {
     val control = new ElevatorControlSystemFCFS(10, 1)
 
     val nextStops01 = Queue()
-    assertResult(-1)(control.findNextStop(nextStops01))
+    assertResult(None)(control.findNextStop(nextStops01))
   }
 
   "the elevator control system with First-Come-First-Serve of a building with X floors" should
