@@ -3,6 +3,7 @@ package org.github.felipegutierrez.elevatorsystem.actors
 import akka.actor.ActorSystem
 import akka.testkit.{EventFilter, ImplicitSender, TestKit}
 import org.github.felipegutierrez.elevatorsystem.actors.exceptions.BuildingCoordinatorException
+import org.github.felipegutierrez.elevatorsystem.actors.protocol.ElevatorPanelProtocol.PickUpRequestSuccess
 import org.github.felipegutierrez.elevatorsystem.actors.protocol._
 import org.scalatest.BeforeAndAfterAll
 import org.scalatest.wordspec.AnyWordSpecLike
@@ -33,7 +34,7 @@ class BuildingCoordinatorSpec
       val direction = +1
       buildingActor ! BuildingCoordinatorProtocol.PickUpRequest(floor, direction)
 
-      expectMsg(ElevatorPanelProtocol.PickUpRequestSuccess())
+      expectMsg(ElevatorPanelProtocol.PickUpRequestSuccess)
       expectNoMessage()
     }
     "move only existing elevators" in {
@@ -121,9 +122,10 @@ class BuildingCoordinatorSpec
     }
 
     "not receive messages that do not belong to its protocol" in {
-      EventFilter.warning(message = "[BuildingCoordinator] unknown message: PickUpRequestSuccess", occurrences = 1) intercept {
+      val msg = PickUpRequestSuccess
+      EventFilter.warning(message = s"[BuildingCoordinator] unknown message: $msg", occurrences = 1) intercept {
         val buildingActor = system.actorOf(BuildingCoordinator.props("building1", 10, 2), "building1")
-        buildingActor ! ElevatorPanelProtocol.PickUpRequestSuccess
+        buildingActor ! msg
       }
     }
   }

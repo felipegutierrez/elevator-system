@@ -115,7 +115,7 @@ case class BuildingCoordinator(actorName: String,
       val nextElevatorId = if (currentElevatorId + 1 > numberOfElevators) 1 else currentElevatorId + 1
       context.become(operational(nextElevatorId, newStopsRequests, newPickUpRequests))
 
-      sender() ! PickUpRequestSuccess()
+      sender() ! PickUpRequestSuccess
 
       // the building coordinator moves the current elevator
       self ! MoveElevator(currentElevatorId, direction)

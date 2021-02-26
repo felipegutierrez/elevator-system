@@ -1,7 +1,8 @@
 package org.github.felipegutierrez.elevatorsystem.actors
 
 import akka.actor.{Actor, ActorLogging}
-import org.github.felipegutierrez.elevatorsystem.actors.protocol.{BuildingCoordinatorProtocol, ElevatorPanelProtocol}
+import org.github.felipegutierrez.elevatorsystem.actors.protocol.BuildingCoordinatorProtocol
+import org.github.felipegutierrez.elevatorsystem.actors.protocol.ElevatorPanelProtocol.{PickUp, PickUpRequestFailure, PickUpRequestSuccess}
 
 /**
  * The [[org.github.felipegutierrez.elevatorsystem.actors.Panel]] actor is the entering point
@@ -22,12 +23,12 @@ class Panel extends Actor with ActorLogging {
    * @return
    */
   override def receive: Receive = {
-    case ElevatorPanelProtocol.PickUp(pickUpFloor, direction, buildingActor) =>
+    case PickUp(pickUpFloor, direction, buildingActor) =>
       val msg = BuildingCoordinatorProtocol.PickUpRequest(pickUpFloor, direction)
       println(s"[Panel] received a PickUp from floor [$pickUpFloor] to go [$direction], sending $msg to the building coordinator")
       buildingActor ! msg
-    case ElevatorPanelProtocol.PickUpRequestSuccess() => println("[Panel] PickUpRequest was requested")
-    case ElevatorPanelProtocol.PickUpRequestFailure() => println("[Panel] PickUpRequest failed")
+    case PickUpRequestSuccess => println("[Panel] PickUpRequest was requested")
+    case PickUpRequestFailure => println("[Panel] PickUpRequest failed")
     case message => log.warning(s"[Panel] unknown message: $message")
   }
 }
