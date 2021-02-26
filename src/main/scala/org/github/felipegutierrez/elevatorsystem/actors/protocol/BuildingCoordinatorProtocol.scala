@@ -1,5 +1,6 @@
 package org.github.felipegutierrez.elevatorsystem.actors.protocol
 
+import org.github.felipegutierrez.elevatorsystem.actors.exceptions.ElevatorControlSystemException
 import org.github.felipegutierrez.elevatorsystem.actors.protocol.ElevatorProtocol.{ElevatorId, Floor}
 
 /**
@@ -12,6 +13,7 @@ object BuildingCoordinatorProtocol {
     def apply(direction: Int): Direction = {
       direction match {
         case i if (i >= -1 && i <= +1) => new Direction(i)
+        case i if (i < -1 || i > +1) => throw new ElevatorControlSystemException("This building still does not have the ability to move elevators to other Direction besides [-1,0,+1]")
       }
     }
   }
