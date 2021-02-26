@@ -122,20 +122,12 @@ object Main {
       // random pick ups
       for (i <- 0 until numberOfRandomPickUps) {
         val randomFloor = BuildingUtil.generateRandomFloor(numberOfFloors, i, if (i % 2 == 0) 1 else -1)
-        //        val randomDirection = {
-        //          if (randomFloor < 5) +1
-        //          else if (randomFloor > numberOfFloors - 5) -1
-        //          else {
-        //            if (randomFloor % 2 == 0) 1 else -1
-        //          }
-        //        }
         val randomDirection = randomFloor match {
           case randomFloor if (randomFloor < 5) => +1
           case randomFloor if (randomFloor > numberOfFloors - 5) => -1
           case randomFloor if (randomFloor % 2 == 0) => +1
           case _ => -1
         }
-
         panelActor ! ElevatorPanelProtocol.PickUp(randomFloor, randomDirection, buildingCoordinatorActor)
       }
     }
