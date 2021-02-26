@@ -22,13 +22,11 @@ class ElevatorControlSystemScan(numberOfFloors: Int, numberOfElevators: Int)
       var left = ListBuffer[Int]()
       var right = ListBuffer[Int]()
 
-      stopsRequested.foreach { stop =>
-
+      stopsRequested.foreach { stop: Int =>
         stop match {
-          case stop if (stop > numberOfFloors) => throw ElevatorControlSystemException(s"it is not possible to stop at floor $stop because this building has only $numberOfFloors floors.")
-          case stop if (stop < currentFloor) => left += stop
-          case stop if (stop > currentFloor) => right += stop
-          case _ => throw ElevatorControlSystemException(s"ERROR: Control system SCAN algorithm. Stop $stop is the same floor of current floor $currentFloor")
+          case stop if (stop < 0 || stop > numberOfFloors) => throw new ElevatorControlSystemException(s"it is not possible to stop at floor $stop because this building has only $numberOfFloors floors.")
+          case stop if (stop == 0 || stop < currentFloor) => left += stop
+          case stop if (stop == numberOfFloors || stop > currentFloor) => right += stop
         }
       }
       left = left.sorted
