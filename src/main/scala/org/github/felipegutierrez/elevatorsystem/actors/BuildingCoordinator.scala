@@ -6,7 +6,7 @@ import akka.util.Timeout
 import org.github.felipegutierrez.elevatorsystem.actors.exceptions.BuildingCoordinatorException
 import org.github.felipegutierrez.elevatorsystem.actors.protocol.BuildingCoordinatorProtocol._
 import org.github.felipegutierrez.elevatorsystem.actors.protocol.ElevatorPanelProtocol.PickUpRequestSuccess
-import org.github.felipegutierrez.elevatorsystem.actors.protocol.ElevatorProtocol.{MakeMove, MoveRequest, RequestElevatorState}
+import org.github.felipegutierrez.elevatorsystem.actors.protocol.ElevatorProtocol.{ElevatorId, Floor, MakeMove, MoveRequest, RequestElevatorState}
 import org.github.felipegutierrez.elevatorsystem.actors.util.BuildingUtil
 import org.github.felipegutierrez.elevatorsystem.services.{ElevatorControlSystem, ElevatorControlSystemFCFS, ElevatorControlSystemScan}
 
@@ -23,14 +23,6 @@ object BuildingCoordinator {
     if (numberOfElevators < 0 || numberOfElevators > 16) throw new BuildingCoordinatorException("Number of elevators must be between 1 and 16")
     if (numberOfFloors < 2) throw new BuildingCoordinatorException("This is not a building. It is a house")
 
-    //    val elevatorControlSystem: ElevatorControlSystem = {
-    //      if (elevatorControlSystemType == ElevatorControlSystem.FCFSControlSystem)
-    //        new ElevatorControlSystemFCFS(numberOfFloors, numberOfElevators)
-    //      else if (elevatorControlSystemType == ElevatorControlSystem.ScanControlSystem)
-    //        new ElevatorControlSystemScan(numberOfFloors, numberOfElevators)
-    //      else
-    //        throw new RuntimeException("Elevator system type unimplemented")
-    //    }
     val elevatorControlSystem: ElevatorControlSystem = elevatorControlSystemType match {
       case elevatorControlSystemType if (elevatorControlSystemType == ElevatorControlSystem.FCFSControlSystem) => new ElevatorControlSystemFCFS(numberOfFloors, numberOfElevators)
       case elevatorControlSystemType if (elevatorControlSystemType == ElevatorControlSystem.ScanControlSystem) => new ElevatorControlSystemScan(numberOfFloors, numberOfElevators)
@@ -69,7 +61,7 @@ case class BuildingCoordinator(actorName: String,
    *
    * @return
    */
-  override def receive: Receive = operational(1, Map[Int, Queue[Int]](), Map[Int, Queue[Int]]())
+  override def receive: Receive = operational(1: ElevatorId, Map[ElevatorId, Queue[Floor]](), Map[ElevatorId, Queue[Floor]]())
 
   /**
    * The handler that manages the stateless behavior of the Building Coordinator.
@@ -91,24 +83,24 @@ case class BuildingCoordinator(actorName: String,
    * @param pickUpRequests a Map that contains the pickUps issued from the [[Panel]] actor.
    * @return
    */
-  def operational(currentElevatorId: Int, stopsRequests: Map[Int, Queue[Int]], pickUpRequests: Map[Int, Queue[Int]]): Receive = {
+  def operational(currentElevatorId: ElevatorId, stopsRequests: Map[ElevatorId, Queue[Floor]], pickUpRequests: Map[ElevatorId, Queue[Floor]]): Receive = {
     case request@PickUpRequest(pickUpFloor, direction) =>
       println(s"[BuildingCoordinator] received a $request from floor[$pickUpFloor] to go [$direction] and will find an elevator to send.")
 
       if (pickUpFloor > numberOfFloors || pickUpFloor < 0) throw new BuildingCoordinatorException(s"I cannot pick up you because the floor $pickUpFloor does not exist in this building")
-      if (direction != +1 && direction != -1) throw new BuildingCoordinatorException("the directions that this elevators supports are only: up [+1] and down [-1]")
-      if (pickUpFloor == 0 && direction == -1) throw new BuildingCoordinatorException("you cannot go down because you are on the ground floor.")
-      if (pickUpFloor == numberOfFloors && direction == +1) throw new BuildingCoordinatorException("you cannot go up because you are on the last floor.")
+      if (direction != Direction(+1) && direction != Direction(-1)) throw new BuildingCoordinatorException("the directions that this elevators supports are only: up [+1] and down [-1]")
+      if (pickUpFloor == 0 && direction == Direction(-1)) throw new BuildingCoordinatorException("you cannot go down because you are on the ground floor.")
+      if (pickUpFloor == numberOfFloors && direction == Direction(+1)) throw new BuildingCoordinatorException("you cannot go up because you are on the last floor.")
 
       // change the Elevators state and calling context.become
-      val stopsRequestsElevator = stopsRequests.get(currentElevatorId).getOrElse(Queue[Int]())
+      val stopsRequestsElevator = stopsRequests.get(currentElevatorId).getOrElse(Queue[Floor]())
       val newStopsRequestsElevator = {
         if (!stopsRequestsElevator.contains(pickUpFloor)) stopsRequestsElevator.enqueue(pickUpFloor)
         else stopsRequestsElevator
       }
       val newStopsRequests = stopsRequests + (currentElevatorId -> newStopsRequestsElevator)
 
-      val pickUpRequestsElevator = pickUpRequests.get(currentElevatorId).getOrElse(Queue[Int]())
+      val pickUpRequestsElevator = pickUpRequests.get(currentElevatorId).getOrElse(Queue[Floor]())
       val newPickUpRequestsElevator = {
         if (!pickUpRequestsElevator.contains(pickUpFloor)) pickUpRequestsElevator.enqueue(pickUpFloor)
         else pickUpRequestsElevator
@@ -116,7 +108,7 @@ case class BuildingCoordinator(actorName: String,
       val newPickUpRequests = pickUpRequests + (currentElevatorId -> newPickUpRequestsElevator)
 
       // the next elevator Id is get in a round robin fashion
-      val nextElevatorId = if (currentElevatorId + 1 > numberOfElevators) 1 else currentElevatorId + 1
+      val nextElevatorId: ElevatorId = if (currentElevatorId + 1 > numberOfElevators) 1 else currentElevatorId + 1
       context.become(operational(nextElevatorId, newStopsRequests, newPickUpRequests))
 
       sender() ! PickUpRequestSuccess
@@ -133,7 +125,7 @@ case class BuildingCoordinator(actorName: String,
         val stateFuture = elevatorActor ? RequestElevatorState(elevatorId)
         val elevatorState = Await.result(stateFuture, Duration.Inf).asInstanceOf[ElevatorState]
 
-        val nextStop = elevatorControlSystem.findNextStop(stopsRequests.get(elevatorId).getOrElse(Queue[Int]()), elevatorState.currentFloor, elevatorState.direction)
+        val nextStop = elevatorControlSystem.findNextStop(stopsRequests.get(elevatorId).getOrElse(Queue[Floor]()), elevatorState.currentFloor, elevatorState.direction)
         if (nextStop != -1) { // check if the queue is empty
           val nextStopFuture = elevatorActor ? MoveRequest(elevatorId, nextStop)
           val moveRequestSuccess = Await.result(nextStopFuture, Duration.Inf).asInstanceOf[MoveRequestSuccess]
@@ -142,11 +134,11 @@ case class BuildingCoordinator(actorName: String,
           val makeMoveSuccess = Await.result(makeMoveFuture, Duration.Inf).asInstanceOf[MakeMoveSuccess]
 
           println(s"[BuildingCoordinator] Elevator ${makeMoveSuccess.elevatorId} arrived at floor [${makeMoveSuccess.floor}]")
-          val stopsRequestsElevator = stopsRequests.get(elevatorId).getOrElse(Queue[Int]())
+          val stopsRequestsElevator = stopsRequests.get(elevatorId).getOrElse(Queue[Floor]())
           val newStopsRequestsElevator = stopsRequestsElevator.filterNot(_ == makeMoveSuccess.floor)
           val newStopsRequests = stopsRequests + (elevatorId -> newStopsRequestsElevator)
 
-          val pickUpRequestsElevator = pickUpRequests.get(elevatorId).getOrElse(Queue[Int]())
+          val pickUpRequestsElevator = pickUpRequests.get(elevatorId).getOrElse(Queue[Floor]())
           val newPickUpRequestsElevator = {
             if (pickUpRequestsElevator.contains(makeMoveSuccess.floor)) {
               val dropOffFloor = BuildingUtil.generateRandomFloor(numberOfFloors, makeMoveSuccess.floor, direction)
@@ -164,7 +156,7 @@ case class BuildingCoordinator(actorName: String,
 
     case msg@DropOffRequest(elevatorId, dropOffFloor, direction) =>
       println(s"[BuildingCoordinator] A passenger on [Elevator $elevatorId] requested $msg")
-      val stopsRequestsElevator = stopsRequests.get(elevatorId).getOrElse(Queue[Int]())
+      val stopsRequestsElevator = stopsRequests.get(elevatorId).getOrElse(Queue[Floor]())
       val newStopsRequestsElevator = {
         if (!stopsRequestsElevator.contains(dropOffFloor)) stopsRequestsElevator.enqueue(dropOffFloor)
         else stopsRequestsElevator

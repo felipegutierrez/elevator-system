@@ -1,6 +1,7 @@
 package org.github.felipegutierrez.elevatorsystem.services
 
 import org.github.felipegutierrez.elevatorsystem.actors.exceptions.ElevatorControlSystemException
+import org.github.felipegutierrez.elevatorsystem.actors.protocol.BuildingCoordinatorProtocol.Direction
 import org.scalatest.flatspec.AnyFlatSpec
 
 import scala.collection.immutable.Queue
@@ -12,12 +13,12 @@ class ElevatorControlSystemScanSpec extends AnyFlatSpec {
     val control = new ElevatorControlSystemScan(180, 1)
 
     val nextStops01 = Queue(176, 79, 34, 60, 92, 11, 41, 114)
-    assertResult(41)(control.findNextStop(nextStops01, 50, -1))
-    assertResult(176)(control.findNextStop(nextStops01, 200, -1))
+    assertResult(41)(control.findNextStop(nextStops01, 50, Direction(-1)))
+    assertResult(176)(control.findNextStop(nextStops01, 200, Direction(-1)))
 
     val nextStops02 = Queue(79, 34, 150, 60, 92, 11, 45, 114)
-    assertResult(45)(control.findNextStop(nextStops02, 50, -1))
-    assertResult(150)(control.findNextStop(nextStops02, 200, -1))
+    assertResult(45)(control.findNextStop(nextStops02, 50, Direction(-1)))
+    assertResult(150)(control.findNextStop(nextStops02, 200, Direction(-1)))
   }
 
   "the elevator control system with SCAN logic going DOWN" should
@@ -25,12 +26,12 @@ class ElevatorControlSystemScanSpec extends AnyFlatSpec {
     val control = new ElevatorControlSystemScan(180, 1)
 
     val nextStops01 = Queue(176, 79, 34, 60, 92, 11, 41, 114)
-    assertResult(60)(control.findNextStop(nextStops01, 50, +1))
-    assertResult(34)(control.findNextStop(nextStops01, 30, +1))
+    assertResult(60)(control.findNextStop(nextStops01, 50, Direction(+1)))
+    assertResult(34)(control.findNextStop(nextStops01, 30, Direction(+1)))
 
     val nextStops02 = Queue(79, 34, 150, 60, 92, 11, 45, 114)
-    assertResult(60)(control.findNextStop(nextStops02, 50, +1))
-    assertResult(11)(control.findNextStop(nextStops02, 9, +1))
+    assertResult(60)(control.findNextStop(nextStops02, 50, Direction(+1)))
+    assertResult(11)(control.findNextStop(nextStops02, 9, Direction(+1)))
   }
 
   "the elevator control system with SCAN that receives an empty list" should
@@ -38,7 +39,7 @@ class ElevatorControlSystemScanSpec extends AnyFlatSpec {
     val control = new ElevatorControlSystemScan(10, 1)
 
     val nextStops01 = Queue()
-    assertResult(-1)(control.findNextStop(nextStops01, 5, -1))
+    assertResult(-1)(control.findNextStop(nextStops01, 5, Direction(-1)))
   }
 
   "the elevator control system with SCAN that receives a list of stops with one floor and the current floor is higher than that floor" should
@@ -46,8 +47,8 @@ class ElevatorControlSystemScanSpec extends AnyFlatSpec {
     val control = new ElevatorControlSystemScan(10, 1)
 
     val nextStops = Queue(5)
-    assertResult(-1)(control.findNextStop(nextStops, 6, +1))
-    assertResult(-1)(control.findNextStop(nextStops, 3, -1))
+    assertResult(-1)(control.findNextStop(nextStops, 6, Direction(+1)))
+    assertResult(-1)(control.findNextStop(nextStops, 3, Direction(-1)))
   }
 
   "the elevator control system with SCAN of a building with X floors" should
@@ -56,7 +57,7 @@ class ElevatorControlSystemScanSpec extends AnyFlatSpec {
       val control = new ElevatorControlSystemScan(10, 1)
 
       val nextStops = Queue(176, 79, 34, 60, 92, 11, 41, 114)
-      assertResult(-1)(control.findNextStop(nextStops, 6, +1))
+      assertResult(-1)(control.findNextStop(nextStops, 6, Direction(+1)))
     }
   }
 }

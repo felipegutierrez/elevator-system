@@ -1,7 +1,9 @@
 package org.github.felipegutierrez.elevatorsystem
 
 import akka.actor.{ActorSystem, Props}
+import org.github.felipegutierrez.elevatorsystem.actors.protocol.BuildingCoordinatorProtocol.Direction
 import org.github.felipegutierrez.elevatorsystem.actors.protocol.ElevatorPanelProtocol
+import org.github.felipegutierrez.elevatorsystem.actors.protocol.ElevatorProtocol.Floor
 import org.github.felipegutierrez.elevatorsystem.actors.util.BuildingUtil
 import org.github.felipegutierrez.elevatorsystem.actors.{BuildingCoordinator, Panel}
 import org.github.felipegutierrez.elevatorsystem.services.ElevatorControlSystem
@@ -114,19 +116,19 @@ object Main {
 
     if (numberOfRandomPickUps <= 0) {
       // pre defined pick ups
-      panelActor ! ElevatorPanelProtocol.PickUp(4, +1, buildingCoordinatorActor)
-      panelActor ! ElevatorPanelProtocol.PickUp(1, +1, buildingCoordinatorActor)
-      panelActor ! ElevatorPanelProtocol.PickUp(10, -1, buildingCoordinatorActor)
-      panelActor ! ElevatorPanelProtocol.PickUp(7, -1, buildingCoordinatorActor)
+      panelActor ! ElevatorPanelProtocol.PickUp(4, Direction(+1), buildingCoordinatorActor)
+      panelActor ! ElevatorPanelProtocol.PickUp(1, Direction(+1), buildingCoordinatorActor)
+      panelActor ! ElevatorPanelProtocol.PickUp(10, Direction(-1), buildingCoordinatorActor)
+      panelActor ! ElevatorPanelProtocol.PickUp(7, Direction(-1), buildingCoordinatorActor)
     } else {
       // random pick ups
       for (i <- 0 until numberOfRandomPickUps) {
-        val randomFloor = BuildingUtil.generateRandomFloor(numberOfFloors, i, if (i % 2 == 0) 1 else -1)
-        val randomDirection = randomFloor match {
-          case randomFloor if (randomFloor < 5) => +1
-          case randomFloor if (randomFloor > numberOfFloors - 5) => -1
-          case randomFloor if (randomFloor % 2 == 0) => +1
-          case _ => -1
+        val randomFloor: Floor = BuildingUtil.generateRandomFloor(numberOfFloors, i, if (i % 2 == 0) Direction(1) else Direction(-1))
+        val randomDirection: Direction = randomFloor match {
+          case randomFloor if (randomFloor < 5) => Direction(+1)
+          case randomFloor if (randomFloor > numberOfFloors - 5) => Direction(-1)
+          case randomFloor if (randomFloor % 2 == 0) => Direction(+1)
+          case _ => Direction(-1)
         }
         panelActor ! ElevatorPanelProtocol.PickUp(randomFloor, randomDirection, buildingCoordinatorActor)
       }

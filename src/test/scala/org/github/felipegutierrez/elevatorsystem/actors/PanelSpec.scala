@@ -2,6 +2,7 @@ package org.github.felipegutierrez.elevatorsystem.actors
 
 import akka.actor.{ActorSystem, Props}
 import akka.testkit.{EventFilter, ImplicitSender, TestKit}
+import org.github.felipegutierrez.elevatorsystem.actors.protocol.BuildingCoordinatorProtocol.Direction
 import org.github.felipegutierrez.elevatorsystem.actors.protocol._
 import org.scalatest.BeforeAndAfterAll
 import org.scalatest.wordspec.AnyWordSpecLike
@@ -21,7 +22,7 @@ class PanelSpec
       EventFilter.warning(pattern = "[Panel] unknown message: [a-z]", occurrences = 0) intercept {
         val panelActor = system.actorOf(Props[Panel], "panelActorSpec")
         val buildingActor = system.actorOf(BuildingCoordinator.props("building", 10, 2), "building")
-        panelActor ! ElevatorPanelProtocol.PickUp(4, +1, buildingActor)
+        panelActor ! ElevatorPanelProtocol.PickUp(4, Direction(+1), buildingActor)
         panelActor ! ElevatorPanelProtocol.PickUpRequestSuccess
         panelActor ! ElevatorPanelProtocol.PickUpRequestFailure
       }

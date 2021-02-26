@@ -1,5 +1,8 @@
 package org.github.felipegutierrez.elevatorsystem.services
 
+import org.github.felipegutierrez.elevatorsystem.actors.protocol.BuildingCoordinatorProtocol.Direction
+import org.github.felipegutierrez.elevatorsystem.actors.protocol.ElevatorProtocol.Floor
+
 import scala.collection.immutable.Queue
 
 object ElevatorControlSystem {
@@ -29,5 +32,5 @@ object ElevatorControlSystem {
  * @param numberOfElevators
  */
 abstract class ElevatorControlSystem(val numberOfFloors: Int, val numberOfElevators: Int) {
-  def findNextStop(stopsRequested: Queue[Int], currentFloor: Int, direction: Int): Int
+  def findNextStop(stopsRequested: Queue[Floor], currentFloor: Floor, direction: Direction): Floor
 }

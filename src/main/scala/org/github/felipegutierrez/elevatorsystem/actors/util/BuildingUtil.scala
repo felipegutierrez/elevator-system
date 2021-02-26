@@ -1,5 +1,8 @@
 package org.github.felipegutierrez.elevatorsystem.actors.util
 
+import org.github.felipegutierrez.elevatorsystem.actors.protocol.BuildingCoordinatorProtocol.Direction
+import org.github.felipegutierrez.elevatorsystem.actors.protocol.ElevatorProtocol.Floor
+
 import java.util.concurrent.ThreadLocalRandom
 
 object BuildingUtil {
@@ -15,11 +18,11 @@ object BuildingUtil {
    * @param direction      the direction that the passenger send the pick up message
    * @return a random floor to create a drop off message
    */
-  def generateRandomFloor(numberOfFloors: Int, currentFloor: Int, direction: Int): Int = {
-    if (currentFloor >= numberOfFloors && direction > 0) throw new RuntimeException("Wrong direction")
-    if (currentFloor <= 0 && direction < 0) throw new RuntimeException("Wrong direction")
+  def generateRandomFloor(numberOfFloors: Int, currentFloor: Int, direction: Direction): Floor = {
+    if (currentFloor >= numberOfFloors && direction.direction > 0) throw new RuntimeException("Wrong direction")
+    if (currentFloor <= 0 && direction.direction < 0) throw new RuntimeException("Wrong direction")
 
-    if (direction > 0) { // direction is to go UP
+    if (direction.direction > 0) { // direction is to go UP
       ThreadLocalRandom.current().nextInt(currentFloor + 1, numberOfFloors + 1)
     } else { // direction is to go DOWN
       if (currentFloor == 1) 0

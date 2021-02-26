@@ -4,7 +4,9 @@ package org.github.felipegutierrez.elevatorsystem.actors.protocol
  * Messages that the Elevator actor can process.
  */
 object ElevatorProtocol {
-  case class MoveRequest(elevatorId: Int, floor: Int)
-  case class MakeMove(elevatorId: Int, floor: Int)
-  case class RequestElevatorState(elevatorId: Int)
+  type ElevatorId = Int
+  type Floor = Int
+  case class MoveRequest(elevatorId: ElevatorId, floor: Floor)
+  case class MakeMove(elevatorId: ElevatorId, floor: Floor)
+  case class RequestElevatorState(elevatorId: ElevatorId)
 }

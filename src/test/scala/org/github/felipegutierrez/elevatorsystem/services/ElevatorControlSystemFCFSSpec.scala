@@ -1,6 +1,7 @@
 package org.github.felipegutierrez.elevatorsystem.services
 
 import org.github.felipegutierrez.elevatorsystem.actors.exceptions.ElevatorControlSystemException
+import org.github.felipegutierrez.elevatorsystem.actors.protocol.BuildingCoordinatorProtocol.Direction
 import org.scalatest.flatspec.AnyFlatSpec
 
 import scala.collection.immutable.Queue
@@ -33,7 +34,7 @@ class ElevatorControlSystemFCFSSpec extends AnyFlatSpec {
       val control = new ElevatorControlSystemFCFS(10, 1)
 
       val nextStops = Queue(176)
-      control.findNextStop(nextStops, 6, +1)
+      control.findNextStop(nextStops, 6, Direction(+1))
     }
   }
 }

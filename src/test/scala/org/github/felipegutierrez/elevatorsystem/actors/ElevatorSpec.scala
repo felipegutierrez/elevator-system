@@ -2,6 +2,7 @@ package org.github.felipegutierrez.elevatorsystem.actors
 
 import akka.actor.ActorSystem
 import akka.testkit.{EventFilter, ImplicitSender, TestKit}
+import org.github.felipegutierrez.elevatorsystem.actors.protocol.BuildingCoordinatorProtocol.Direction
 import org.github.felipegutierrez.elevatorsystem.actors.protocol.{BuildingCoordinatorProtocol, ElevatorPanelProtocol, ElevatorProtocol}
 import org.scalatest.BeforeAndAfterAll
 import org.scalatest.matchers.should.Matchers
@@ -22,13 +23,13 @@ class ElevatorSpec extends TestKit(ActorSystem("ElevatorSpec"))
     val elevatorActor = system.actorOf(Elevator.props(id, s"elevator_$id"), s"elevator_$id")
     "retrieve its state when it is stop" in {
       elevatorActor ! ElevatorProtocol.RequestElevatorState(1)
-      expectMsg(BuildingCoordinatorProtocol.ElevatorState(1, 0, 0, 0))
+      expectMsg(BuildingCoordinatorProtocol.ElevatorState(1, 0, 0, Direction(0)))
     }
     "retrieve the right state after moving" in {
       elevatorActor ! ElevatorProtocol.MoveRequest(1, 10)
       expectMsg(BuildingCoordinatorProtocol.MoveRequestSuccess(1, 10))
       elevatorActor ! ElevatorProtocol.MakeMove(1, 10)
-      expectMsg(BuildingCoordinatorProtocol.MakeMoveSuccess(1, 10, 1))
+      expectMsg(BuildingCoordinatorProtocol.MakeMoveSuccess(1, 10, Direction(+1)))
     }
   }
 

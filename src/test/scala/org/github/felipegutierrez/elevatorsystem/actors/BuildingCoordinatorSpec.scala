@@ -3,6 +3,7 @@ package org.github.felipegutierrez.elevatorsystem.actors
 import akka.actor.ActorSystem
 import akka.testkit.{EventFilter, ImplicitSender, TestKit}
 import org.github.felipegutierrez.elevatorsystem.actors.exceptions.BuildingCoordinatorException
+import org.github.felipegutierrez.elevatorsystem.actors.protocol.BuildingCoordinatorProtocol.Direction
 import org.github.felipegutierrez.elevatorsystem.actors.protocol.ElevatorPanelProtocol.PickUpRequestSuccess
 import org.github.felipegutierrez.elevatorsystem.actors.protocol._
 import org.scalatest.BeforeAndAfterAll
@@ -26,19 +27,19 @@ class BuildingCoordinatorSpec
     val buildingActor = system.actorOf(BuildingCoordinator.props(actorName, numberOfFloors, numberOfElevators), actorName)
 
     "be the only one that moves elevators" in {
-      buildingActor ! BuildingCoordinatorProtocol.MoveElevator(1, 1)
+      buildingActor ! BuildingCoordinatorProtocol.MoveElevator(1, Direction(1))
       expectNoMessage()
     }
     "receive pick_up requests" in {
       val floor = 4
-      val direction = +1
+      val direction = Direction(+1)
       buildingActor ! BuildingCoordinatorProtocol.PickUpRequest(floor, direction)
 
       expectMsg(ElevatorPanelProtocol.PickUpRequestSuccess)
       expectNoMessage()
     }
     "move only existing elevators" in {
-      buildingActor ! BuildingCoordinatorProtocol.MoveElevator(2, 1)
+      buildingActor ! BuildingCoordinatorProtocol.MoveElevator(2, Direction(1))
     }
   }
 
@@ -73,7 +74,7 @@ class BuildingCoordinatorSpec
 
         val buildingActor = system.actorOf(BuildingCoordinator.props(actorName, numberOfFloors, numberOfElevators), actorName)
         val floor = -1
-        val direction = +1
+        val direction = Direction(+1)
         buildingActor ! BuildingCoordinatorProtocol.PickUpRequest(floor, direction)
       }
     }
@@ -88,7 +89,7 @@ class BuildingCoordinatorSpec
 
         val buildingActor = system.actorOf(BuildingCoordinator.props(actorName, numberOfFloors, numberOfElevators), actorName)
         val floor = 0
-        val direction = -1
+        val direction = Direction(-1)
         buildingActor ! BuildingCoordinatorProtocol.PickUpRequest(floor, direction)
         expectNoMessage()
       }
@@ -104,7 +105,7 @@ class BuildingCoordinatorSpec
 
         val buildingActor = system.actorOf(BuildingCoordinator.props(actorName, numberOfFloors, numberOfElevators), actorName)
         val floor = 10
-        val direction = 1
+        val direction = Direction(+1)
         buildingActor ! BuildingCoordinatorProtocol.PickUpRequest(floor, direction)
         expectNoMessage()
       }
@@ -115,9 +116,9 @@ class BuildingCoordinatorSpec
     "only receive messages that belong to its protocol" in {
       EventFilter.warning(pattern = "[BuildingCoordinator] unknown message: [a-z]", occurrences = 0) intercept {
         val buildingActor = system.actorOf(BuildingCoordinator.props("building", 10, 2), "building")
-        buildingActor ! BuildingCoordinatorProtocol.PickUpRequest(+4, +1)
-        buildingActor ! BuildingCoordinatorProtocol.MoveElevator(1, +1)
-        buildingActor ! BuildingCoordinatorProtocol.DropOffRequest(1, 8, +1)
+        buildingActor ! BuildingCoordinatorProtocol.PickUpRequest(+4, Direction(+1))
+        buildingActor ! BuildingCoordinatorProtocol.MoveElevator(1, Direction(+1))
+        buildingActor ! BuildingCoordinatorProtocol.DropOffRequest(1, 8, Direction(+1))
       }
     }
 
